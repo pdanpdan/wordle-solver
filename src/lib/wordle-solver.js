@@ -19,7 +19,18 @@ const colours = ['G', 'Y', 'B'];
 const guessWordRe = /^[a-z]{5}$/i;
 const guessResultRe = /^[gyb]$/i;
 
-const cache = {};
+const cache = {
+  true: {
+    score: 0.022063810668693867,
+    words: ['LARES'],
+    list: fullWordsList,
+  },
+  false: {
+    score: 0.022063810668693867,
+    words: ['LARES'],
+    list: fullWordsList,
+  },
+};
 
 function wordScoreCalculate(item, p = 1, depth = 0) {
   return colours.reduce((acc, colour) => {
@@ -102,14 +113,6 @@ export default function wordleSolver(hardMode) {
           filters.push(guess);
         }
       }
-    }
-
-    if (filters.length === 0) {
-      return {
-        score: 0.022063810668693867,
-        words: ['LARES'],
-        list: filteredWordsList,
-      };
     }
 
     const cacheKey = filters.join('|') + hardMode;
