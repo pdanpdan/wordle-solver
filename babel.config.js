@@ -1,5 +1,3 @@
-
-
 module.exports = api => {
   return {
     presets: [
@@ -12,4 +10,3 @@ module.exports = api => {
     ]
   }
 }
-

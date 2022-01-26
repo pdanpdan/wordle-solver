@@ -393,7 +393,13 @@ export default defineComponent({
     },
 
     mapColors(color, forceBlack) {
-      return color === 'G' ? 'green' : (color === 'Y' ? 'orange' : (color === 'B' || forceBlack === true ? 'grey-7' : undefined));
+      if (color === 'G') {
+        return 'green';
+      }
+      if (color === 'Y') {
+        return 'orange';
+      }
+      return color === 'B' || forceBlack === true ? 'grey-7' : undefined;
     },
   },
 

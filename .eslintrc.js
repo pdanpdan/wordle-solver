@@ -7,11 +7,11 @@ module.exports = {
   parserOptions: {
     parser: '@babel/eslint-parser',
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
-    sourceType: 'module' // Allows for the use of imports
+    sourceType: 'module', // Allows for the use of imports
   },
 
   env: {
-    browser: true
+    browser: true,
   },
 
   // Rules order is important, please avoid shuffling them
@@ -27,15 +27,13 @@ module.exports = {
     // 'plugin:vue/vue3-strongly-recommended', // Priority B: Strongly Recommended (Improving Readability)
     // 'plugin:vue/vue3-recommended', // Priority C: Recommended (Minimizing Arbitrary Choices and Cognitive Overhead)
 
-    'airbnb-base'
-
+    'airbnb-base',
   ],
 
   plugins: [
     // https://eslint.vuejs.org/user-guide/#why-doesn-t-it-work-on-vue-file
     // required to lint *.vue files
     'vue',
-
   ],
 
   globals: {
@@ -48,15 +46,12 @@ module.exports = {
     __QUASAR_SSR_PWA__: 'readonly',
     process: 'readonly',
     Capacitor: 'readonly',
-    chrome: 'readonly'
+    chrome: 'readonly',
   },
 
   // add your custom rules here
   rules: {
     'no-param-reassign': 'off',
-    'no-void': 'off',
-    'no-nested-ternary': 'off',
-    'max-classes-per-file': 'off',
 
     'import/first': 'off',
     'import/named': 'error',
@@ -66,11 +61,34 @@ module.exports = {
     'import/extensions': 'off',
     'import/no-unresolved': 'off',
     'import/no-extraneous-dependencies': 'off',
+    'import/no-dynamic-require': 'off',
     'import/prefer-default-export': 'off',
     'prefer-promise-reject-errors': 'off',
 
-
+    // allow console.log during development only
+    'no-console': process.env.NODE_ENV === 'production' ? ['error', { allow: ['info', 'warn', 'error'] }] : 'off',
     // allow debugger during development only
-    'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
-  }
-}
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+
+    'linebreak-style': 'off',
+    'arrow-parens': ['error', 'always'],
+    'max-len': ['error', 400],
+    'template-curly-spacing': ['error', 'always'],
+    'no-underscore-dangle': 'off',
+    'no-var': 'error',
+    'no-param-reassign': ['error', { 'props': false }],
+    indent: 'off',
+    'indent-legacy': ['error', 2, {
+      SwitchCase: 1,
+    }],
+    'vue/script-indent': ['error', 2, {
+      baseIndent: 0,
+      switchCase: 1,
+      ignores: [],
+    }],
+    'vue/max-attributes-per-line': ['error', {
+      singleline: 3,
+      multiline: 1,
+    }],
+  },
+};
