@@ -8,7 +8,7 @@
         padding="2px 16px"
         @click="resetSolver"
       >
-        <div style="min-width: 7.6em">Reset</div>
+        <div style="min-width: 7.6em">{{ $t('solver.reset') }}</div>
       </q-btn>
 
       <q-btn
@@ -93,7 +93,7 @@
     <q-separator class="full-width" spaced />
 
     <div class="text-subtitle2 text-center">
-      Suggested words (score {{ solution.score.toFixed(4) }})
+      {{ $t('solver.suggested_words', [solution.score.toFixed(4)]) }}
     </div>
     <div class="col q-pa-sm scroll">
       <div class="row items-center justify-center q-gutter-md">
@@ -112,7 +112,7 @@
     </div>
 
     <div class="text-subtitle2 text-center">
-      Matching words ({{ solution.list.length }})
+      {{ $t('solver.matching_words', [solution.list.length]) }}
     </div>
     <div class="col q-pa-sm scroll">
       <div class="row items-center justify-center q-gutter-sm">

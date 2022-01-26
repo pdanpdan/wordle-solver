@@ -1,0 +1,11 @@
+{
+  "error_404": {
+    "go_home": "Go Home",
+    "nothing_here": "Oops. Nothing here..."
+  },
+  "solver": {
+    "matching_words": "Matching words ({0})",
+    "reset": "Reset",
+    "suggested_words": "Suggested words (score {0})"
+  }
+}
