@@ -1,6 +1,6 @@
 {
   "name": "wordle-solver",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wordle Solver Helper",
   "productName": "Wordle Solver",
   "author": "Dan Popescu <pdan.popescu@gmail.com>",
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.16.5",
-    "@quasar/app": "^3.3.0",
+    "@quasar/app": "=3.2.9",
     "eslint": "^8.7.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4",
