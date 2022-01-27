@@ -507,6 +507,12 @@ export default defineComponent({
         }
       }
     },
+
+    guessTarget() {
+      this.checker = this.guessTargetValid === true
+        ? wordleChecker(this.guessTarget)
+        : undefined;
+    },
   },
 
   methods: {
@@ -518,7 +524,6 @@ export default defineComponent({
 
       if (keepTarget !== true) {
         this.target = createTarget();
-        this.checker = undefined;
       }
 
       this.solver = wordleSolver(this.hardMode);
@@ -655,10 +660,6 @@ export default defineComponent({
 
       if (this.targetEdit !== true) {
         this.resetSolver(true);
-
-        this.checker = this.guessTargetValid === true
-          ? wordleChecker(this.guessTarget)
-          : undefined;
       }
     },
 
