@@ -9,6 +9,7 @@
           dense
           size="14px"
           icon="help_center"
+          :aria-label="$t('solver.btn_help')"
           @click="onShowHelp"
         />
 
@@ -17,6 +18,7 @@
           unelevated
           size="14px"
           padding="2px 16px"
+          :aria-label="$t('solver.btn_reset_solver')"
           @click="resetSolver()"
         >
           <div>{{ $t('solver.reset') }}</div>
@@ -27,6 +29,7 @@
           unelevated
           size="14px"
           padding="2px 16px"
+          :aria-label="hardMode === true ? $t('solver.btn_to_easy_mode') : $t('solver.btn_to_hard_mode')"
           @click="hardMode = hardMode !== true"
         >
           <div style="min-width: 6em">{{ hardMode === true ? 'Hard mode' : 'Easy mode' }}</div>
@@ -39,6 +42,7 @@
           dense
           size="14px"
           :icon="darkMode === true ? 'dark_mode' : 'light_mode'"
+          :aria-label="darkMode === true ? $t('solver.btn_to_light_mode') : $t('solver.btn_to_dark_mode')"
           @click="darkMode = darkMode !== true"
         />
       </div>
@@ -68,6 +72,7 @@
           size="14px"
           :icon="targetEdit === true ? 'send' : 'edit'"
           :color="targetEdit === true && guessTargetValid === true ? 'primary' : undefined"
+          :aria-label="targetEdit === true ? $t('solver.btn_save_target') : $t('solver.btn_edit_target')"
           @click="onChangeTarget()"
         />
       </div>
@@ -100,6 +105,7 @@
               dense
               size="14px"
               icon="undo"
+              :aria-label="$t('solver.btn_undo')"
               @click="undoSolver(j)"
             />
           </div>
@@ -114,6 +120,7 @@
               :color="mapColors(guess.colors[i - 1]) || defaultColors.color"
               :text-color="mapColors(guess.colors[i - 1]) ? 'white' : defaultColors.textColor"
               :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
+              :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.colors[i - 1])])"
               @click="onToggleColor(i - 1)"
             >
               <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
@@ -134,6 +141,7 @@
               icon="send"
               color="primary"
               :disable="guessLettersValid !== true || guessColorsValid !== true"
+              :aria-label="$t('solver.btn_add_guess')"
               @click="addGuess"
             />
           </div>
@@ -155,6 +163,7 @@
                   unelevated
                   padding="4px 12px"
                   :disable="word === guessLetters || guessSolved === true || solution.list.length === 0"
+                  :aria-label="$t('solver.btn_use_word', [word])"
                   @click="onSelectNextGuess(word)"
                 >
                   <div style="min-width: 5em">{{ word }}</div>
@@ -175,6 +184,7 @@
                 unelevated
                 padding="2px 8px"
                 :disable="word === guessLetters || guessSolved === true || solution.list.length === 0"
+                :aria-label="$t('solver.btn_use_word', [word])"
                 @click="onSelectNextGuess(word)"
               >
                 <div style="min-width: 5em">{{ word }}</div>
@@ -223,6 +233,7 @@
                 ? 'white'
                 : defaultColors.textColor
             "
+            :aria-label="$t('solver.btn_keyboard', [key])"
             @click="onKeyPress(key)"
           >
             <q-icon v-if="key === 'BS'" class="q-pr-xs" name="backspace" />
@@ -677,6 +688,16 @@ export default defineComponent({
         return 'orange';
       }
       return color === 'b' || forceUnmatch === true ? 'grey-7' : undefined;
+    },
+
+    nextColorMatchType(color) {
+      if (color === 'g') {
+        return this.$t('solver.type_not_present');
+      }
+
+      return color === 'y'
+        ? this.$t('solver.type_in_place')
+        : this.$t('solver.type_not_in_place');
     },
   },
 
