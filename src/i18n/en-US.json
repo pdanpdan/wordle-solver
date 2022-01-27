@@ -4,8 +4,9 @@
     "nothing_here": "Oops. Nothing here..."
   },
   "solver": {
-    "matching_words": "Matching words ({0})",
+    "guesses": "Guesses: {0}",
+    "matching_words": "Matching words: {0}",
     "reset": "Reset",
-    "suggested_words": "Suggested words (score {0})"
+    "suggested_words": "Suggested words: {0}"
   }
 }

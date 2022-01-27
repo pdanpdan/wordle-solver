@@ -6,7 +6,7 @@
         unelevated
         size="14px"
         padding="2px 16px"
-        @click="resetSolver"
+        @click="resetSolver()"
       >
         <div style="min-width: 7.6em">{{ $t('solver.reset') }}</div>
       </q-btn>
@@ -34,21 +34,19 @@
 
     <q-separator class="full-width"/>
 
-    <div
-      v-for="(guessItem, j) in visibleGuesses"
-      :key="j"
-      class="q-mt-sm row no-wrap items-center q-gutter-x-sm"
-    >
+    <div class="q-my-sm row no-wrap items-center q-gutter-x-sm">
       <q-btn
         v-for="i in 5"
         :key="i"
-        unelevated
+        outline
         size="28px"
         padding="2px"
-        :color="mapColors(guessItem.colors[i - 1], true)"
+        :color="defaultColors.color"
+        :text-color="guessTargetColor"
         disable
       >
-        <div style="min-width: 1.715em">{{ guessItem.letters[i - 1] || '&nbsp;' }}</div>
+        <div v-for="(letter, j) in guessTargetOptions[i - 1]" :key="j" class="w-target__suggestion">{{ letter }}</div>
+        <div style="min-width: 1.715em">{{ target[i - 1] || '?' }}</div>
       </q-btn>
 
       <q-btn
@@ -57,78 +55,125 @@
         round
         dense
         size="14px"
-        icon="undo"
-        @click="undoSolver(j)"
+        :icon="targetEdit === true ? 'send' : 'edit'"
+        :color="targetEdit === true && guessTargetValid === true ? 'primary' : undefined"
+        @click="onChangeTarget()"
       />
     </div>
 
-    <div class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
-      <q-btn
-        v-for="i in 5"
-        :key="i"
-        unelevated
-        size="28px"
-        padding="2px"
-        :color="mapColors(guess.colors[i - 1]) || defaultColors.color"
-        :text-color="mapColors(guess.colors[i - 1]) ? 'white' : defaultColors.textColor"
-        :disable="i - 1 >= guess.cursorIndex"
-        @click="onToggleColor(i - 1)"
-      >
-        <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
-      </q-btn>
+    <q-separator v-if="targetEdit !== true" class="full-width"/>
 
-      <q-btn
-        class="q-ml-md"
-        flat
-        round
-        dense
-        size="14px"
-        icon="send"
-        color="primary"
-        :disable="guess.cursorIndex <= 4"
-        @click="addGuess()"
-      />
-    </div>
-
-    <q-separator class="full-width" spaced />
-
-    <div class="text-subtitle2 text-center">
-      {{ $t('solver.suggested_words', [solution.score.toFixed(4)]) }}
-    </div>
-    <div class="col q-pa-sm scroll">
-      <div class="row items-center justify-center q-gutter-md">
-        <q-btn
-          v-for="(word, i) in solution.words"
-          :key="i"
-          v-bind="defaultColors"
-          unelevated
-          padding="4px 12px"
-          :disable="word === guess.letters.join('')"
-          @click="onSelectNextGuess(word)"
+    <q-scroll-area v-if="targetEdit !== true" class="col full-width">
+      <div class="column no-wrap items-center">
+        <div
+          v-for="(guessItem, j) in guessesVisible"
+          :key="j"
+          class="q-mt-sm row no-wrap items-center q-gutter-x-sm"
         >
-          <div style="min-width: 5em">{{ word }}</div>
-        </q-btn>
-      </div>
-    </div>
+          <q-btn
+            v-for="i in 5"
+            :key="i"
+            unelevated
+            size="28px"
+            padding="2px"
+            :color="mapColors(guessItem.colors[i - 1], true)"
+            disable
+          >
+            <div style="min-width: 1.715em">{{ guessItem.letters[i - 1] || '&nbsp;' }}</div>
+          </q-btn>
 
-    <div class="text-subtitle2 text-center">
-      {{ $t('solver.matching_words', [solution.list.length]) }}
-    </div>
-    <div class="col q-pa-sm scroll">
-      <div class="row items-center justify-center q-gutter-sm">
-        <q-btn
-          v-for="(word, i) in solution.list.slice(0, 35)"
-          :key="i"
-          v-bind="defaultColors"
-          unelevated
-          padding="2px 8px"
-          :disable="word === guess.letters.join('')"
-          @click="onSelectNextGuess(word)"
-        >
-          <div style="min-width: 5em">{{ word }}</div>
-        </q-btn>
+          <q-btn
+            class="q-ml-md"
+            flat
+            round
+            dense
+            size="14px"
+            icon="undo"
+            @click="undoSolver(j)"
+          />
+        </div>
+
+        <div v-if="guessSolved !== true && solution.list.length > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
+          <q-btn
+            v-for="i in 5"
+            :key="i"
+            unelevated
+            size="28px"
+            padding="2px"
+            :color="mapColors(guess.colors[i - 1]) || defaultColors.color"
+            :text-color="mapColors(guess.colors[i - 1]) ? 'white' : defaultColors.textColor"
+            :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
+            @click="onToggleColor(i - 1)"
+          >
+            <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
+            <q-badge
+              v-if="guessColorsConflicts[i - 1]"
+              color="negative"
+              rounded
+              floating
+            />
+          </q-btn>
+
+          <q-btn
+            class="q-ml-md"
+            flat
+            round
+            dense
+            size="14px"
+            icon="send"
+            color="primary"
+            :disable="guessLettersValid !== true || guessColorsValid !== true"
+            @click="addGuess"
+          />
+        </div>
+
+        <q-separator class="full-width" spaced />
+
+        <template v-if="solution.words.length > 0">
+          <div class="row text-subtitle2 text-center">
+            {{ $t('solver.guesses', [guessesLength]) }}
+            <q-separator vertical spaced />
+            {{ $t('solver.suggested_words', [solution.words.length]) }}
+          </div>
+          <div class="q-pa-sm">
+            <div class="row items-center justify-center q-gutter-md">
+              <q-btn
+                v-for="(word, i) in solution.words"
+                :key="i"
+                v-bind="defaultColors"
+                unelevated
+                padding="4px 12px"
+                :disable="word === guessLetters || guessSolved === true || solution.list.length === 0"
+                @click="onSelectNextGuess(word)"
+              >
+                <div style="min-width: 5em">{{ word }}</div>
+              </q-btn>
+            </div>
+          </div>
+        </template>
+
+        <div class="text-subtitle2 text-center">
+          {{ $t('solver.matching_words', [solution.list.length]) }}
+        </div>
+        <div v-if="solution.list.length > 0" class="q-pa-sm">
+          <div class="row items-center justify-center q-gutter-sm">
+            <q-btn
+              v-for="(word, i) in solution.list.slice(0, 50)"
+              :key="i"
+              v-bind="defaultColors"
+              unelevated
+              padding="2px 8px"
+              :disable="word === guessLetters || guessSolved === true || solution.list.length === 0"
+              @click="onSelectNextGuess(word)"
+            >
+              <div style="min-width: 5em">{{ word }}</div>
+            </q-btn>
+          </div>
+        </div>
       </div>
-    </div>
+    </q-scroll-area>
+
+    <q-space v-else />
 
     <div class="full-width relative-position">
       <q-separator spaced />
@@ -150,12 +195,20 @@
           unelevated
           padding="7px"
           :color="
-            key === 'ENTER' && guess.cursorIndex > 4
+            key === 'ENTER' && (
+              (targetEdit === true && guessTargetValid === true)
+              || (targetEdit !== true && guessLettersValid === true && guessColorsValid === true)
+            )
               ? 'primary'
               : mapColors(keyboardColors[key]) || defaultColors.color
           "
           :text-color="
-            key === 'ENTER' && guess.cursorIndex > 4 || mapColors(keyboardColors[key])
+            (
+              key === 'ENTER' && (
+                (targetEdit === true && guessTargetValid === true)
+                || (targetEdit !== true && guessLettersValid === true && guessColorsValid === true)
+              )
+            ) || mapColors(keyboardColors[key])
               ? 'white'
               : defaultColors.textColor
           "
@@ -172,25 +225,49 @@
 
 <script>
 import { defineComponent } from 'vue';
-import wordleSolver from '../lib/wordle-solver.js';
+import { wordleSolver, wordleChecker } from '../lib/wordle-solver.js';
+
+const letterRe = /^[a-z]$/i;
 
 function createGuess() {
   return {
-    cursorIndex: 0,
-    letters: [],
-    colors: Array(5).fill('X'),
+    letters: Array(5).fill(''),
+    colors: Array(5).fill('x'),
     processing: false,
   };
 }
 
 function createSolution(solution) {
-  return solution === Object(solution)
-    ? solution
-    : {
-      score: 0,
-      words: [],
-      list: [],
-    };
+  const sol = {
+    words: [],
+    list: [],
+  };
+
+  if (solution === Object(solution)) {
+    if (Array.isArray(solution.words) === true) {
+      sol.words = solution.words;
+    } else if (typeof solution.word === 'string') {
+      sol.words = [solution.word];
+    }
+
+    if (Array.isArray(solution.list) === true) {
+      sol.list = solution.list;
+    }
+  }
+
+  return sol;
+}
+
+function createTarget(word) {
+  const target = Array(5).fill('');
+
+  if (typeof word === 'string') {
+    for (let i = 0; i < 5; i += 1) {
+      target[i] = letterRe.test(word[i]) === true ? word[i].toLowerCase() : '';
+    }
+  }
+
+  return target;
 }
 
 export default defineComponent({
@@ -199,22 +276,160 @@ export default defineComponent({
   data() {
     return {
       hardMode: false,
+      target: createTarget(),
+      targetEdit: false,
       guesses: [],
       guess: createGuess(),
       solution: createSolution(),
-      keyboardColors: {},
     };
   },
 
   computed: {
-    visibleGuesses() {
+    guessesVisible() {
       return this.guess.processing === true
         ? this.guessesBackup
         : this.guesses;
     },
 
+    guessesLength() {
+      return this.guessesVisible.length;
+    },
+
     guessLetters() {
       return this.guess.letters.join('');
+    },
+
+    guessLettersLength() {
+      return this.guessLetters.length;
+    },
+
+    guessLettersValid() {
+      return this.guessLettersLength > 4
+        && this.solver !== undefined
+        && this.solver.isValidWord(this.guessLetters);
+    },
+
+    guessColorsConflicts() {
+      const conflicts = Array(5).fill(false);
+      const { letters, colors } = this.guess;
+
+      for (let i = 0; i < 5; i += 1) {
+        if (letters[i] !== '') {
+          if (colors[i] === 'g') {
+            if (this.guesses.findIndex((guess) => (
+              (guess.letters[i] === letters[i] && guess.colors[i] !== 'g')
+              || (guess.letters[i] !== letters[i] && guess.colors[i] === 'g')
+            )) > -1) {
+              conflicts[i] = true;
+            }
+          } else if (colors[i] === 'y') {
+            if (this.guesses.findIndex((guess) => (
+              guess.letters[i] === letters[i] && guess.colors[i] !== 'y'
+            )) > -1) {
+              conflicts[i] = true;
+            }
+          } else if (this.guesses.findIndex((guess) => (
+            guess.letters[i] === letters[i] && (guess.colors[i] === 'g' || guess.colors[i] === 'y')
+          )) > -1) {
+            conflicts[i] = true;
+          }
+        }
+      }
+
+      return conflicts;
+    },
+
+    guessColorsValid() {
+      return this.guessColorsConflicts.indexOf(true) === -1;
+    },
+
+    guessTarget() {
+      return this.target.join('');
+    },
+
+    guessTargetLength() {
+      return this.guessTarget.length;
+    },
+
+    guessTargetValid() {
+      return this.guessTargetLength === 5
+        && this.solver !== undefined
+        && this.solver.isValidWord(this.guessTarget);
+    },
+
+    guessTargetOptions() {
+      const arr5 = Array(5).fill(null);
+      const opts = arr5.map(() => []);
+      const free = arr5.map((_, i) => i).filter((i) => this.target[i] === '');
+
+      if (free.length > 0) {
+        this.guesses.forEach(({ letters, colors }) => {
+          for (let i = 0; i < 5; i += 1) {
+            if (colors[i] === 'y') {
+              free.forEach((j) => {
+                if (j !== i && opts[j].indexOf(letters[i]) === -1) {
+                  opts[j].push(letters[i]);
+                }
+              });
+            }
+          }
+        });
+
+        this.guesses.forEach(({ letters, colors }) => {
+          for (let i = 0; i < 5; i += 1) {
+            if (colors[i] !== 'g' && opts[i].indexOf(letters[i]) > -1) {
+              opts[i] = opts[i].filter((l) => l !== letters[i]);
+            }
+          }
+        });
+      }
+
+      return opts;
+    },
+
+    guessTargetColor() {
+      if (this.guessTargetValid === true) {
+        return 'positive';
+      }
+
+      if (this.guessTargetLength > 0 && (this.targetEdit !== true || this.guessTargetLength > 4)) {
+        return 'negative';
+      }
+
+      return this.targetEdit !== true
+        ? 'grey-6'
+        : this.defaultColors.textColor;
+    },
+
+    guessSolved() {
+      const { guessesLength } = this;
+
+      if (guessesLength === 0) {
+        return false;
+      }
+
+      const guess = this.guesses[guessesLength - 1];
+
+      return this.guessTarget === guess.letters.join('') || guess.colors.join('') === 'ggggg';
+    },
+
+    keyboardColors() {
+      const keys = {};
+
+      if (this.targetEdit !== true) {
+        this.guesses.forEach(({ letters, colors }) => {
+          for (let i = 0; i < 5; i += 1) {
+            const letter = letters[i];
+            const color = colors[i];
+
+            if (keys[letter] === undefined || color === 'g') {
+              keys[letter] = color === 'x' ? 'b' : color;
+            }
+          }
+        });
+      }
+
+      return keys;
     },
 
     darkMode: {
@@ -243,21 +458,29 @@ export default defineComponent({
 
   watch: {
     hardMode() {
-      this.undoSolver(this.guesses.length);
+      this.resetSolver(true);
     },
 
     guessLetters() {
+      if (this.solution.list.length === 1 && this.solution.list[0] === this.guessLetters) {
+        for (let i = 0; i < 5; i += 1) {
+          this.guess.colors[i] = 'g';
+        }
+
+        return;
+      }
+
       const usedLetters = { ...this.keyboardColors };
-      const iMax = this.guess.letters.length;
+      const iMax = this.guessLettersLength;
 
       for (let i = 0; i < iMax; i += 1) {
         const letter = this.guess.letters[i];
 
-        if (this.guesses.findIndex(({ letters, colors }) => letters[i] === letter && colors[i] === 'G') > -1) {
-          this.guess.colors[i] = 'G';
+        if (this.guesses.findIndex(({ letters, colors }) => letters[i] === letter && colors[i] === 'g') > -1) {
+          this.guess.colors[i] = 'g';
           usedLetters[letter] = undefined;
-        } else if (usedLetters[letter] === 'B') {
-          this.guess.colors[i] = 'B';
+        } else if (usedLetters[letter] === 'b') {
+          this.guess.colors[i] = 'b';
           usedLetters[letter] = undefined;
         }
       }
@@ -265,8 +488,8 @@ export default defineComponent({
       for (let i = 0; i < iMax; i += 1) {
         const letter = this.guess.letters[i];
 
-        if (usedLetters[letter] !== undefined) {
-          this.guess.colors[i] = 'Y';
+        if (usedLetters[letter] !== undefined && this.guess.colors[i] !== 'g') {
+          this.guess.colors[i] = 'y';
           usedLetters[letter] = undefined;
         }
       }
@@ -274,143 +497,175 @@ export default defineComponent({
   },
 
   methods: {
-    resetSolver() {
+    resetSolver(keepTarget) {
       this.guessesBackup = this.guesses.slice();
 
       this.guesses = [];
       this.guess = createGuess();
-      this.keyboardColors = {};
+
+      if (keepTarget !== true) {
+        this.target = createTarget();
+        this.checker = undefined;
+      }
 
       this.solver = wordleSolver(this.hardMode);
-      this.guess.processing = true;
 
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          this.solution = createSolution(this.solver());
-          this.guess.processing = false;
-          resolve();
-        }, 0);
-      });
+      this.solution = createSolution(this.solver.getCurrentSolution());
     },
 
     undoSolver(index) {
-      const guesses = this.guesses.slice(0, index);
-      const originalGuess = index === this.guesses.length
-        ? this.guess
-        : this.guesses[index];
+      if (index < 0 || index >= this.guessesLength) {
+        return;
+      }
 
-      guesses
-        .reduce((q, guess) => q.then(() => this.addGuess(guess)), this.resetSolver())
-        .then(() => {
-          this.guess = originalGuess;
+      this.guess = this.guesses[index];
+      this.guesses = this.guesses.slice(0, index);
+      this.solver.rewind(index);
+
+      this.solution = createSolution(this.solver.getCurrentSolution());
+
+      if (this.guessTargetLength < 5) {
+        for (let i = 0; i < 5; i += 1) {
+          this.target[i] = '';
+        }
+
+        this.guesses.forEach(({ letters, colors }) => {
+          for (let i = 0; i < 5; i += 1) {
+            if (colors[i] === 'g') {
+              this.target[i] = letters[i];
+            }
+          }
         });
+      }
     },
 
-    addGuess(guess = this.guess) {
-      const { letters, colors } = guess;
-
-      if (letters.length !== 5) {
-        return Promise.resolve();
+    addGuess() {
+      if (this.guessLettersValid !== true || this.guessColorsValid !== true) {
+        return;
       }
 
-      if (this.guess === guess) {
-        this.guessesBackup = this.guesses.slice();
+      const { letters, colors } = this.guess;
+
+      if (this.checker !== undefined) {
+        const result = this.checker(this.guessLetters);
+
+        for (let i = 0; i < 5; i += 1) {
+          colors[i] = result[i];
+        }
       }
+
+      this.guessesBackup = this.guesses.slice();
       this.guess.processing = true;
 
-      return new Promise((resolve) => {
-        setTimeout(() => {
+      this.solver
+        .solve(colors.join(''), this.guessLetters)
+        .then((solution) => {
+          this.solution = createSolution(solution);
+
           this.guesses.push({
             letters,
             colors,
           });
 
-          if (this.guess === guess) {
-            this.guess = createGuess();
+          if (this.guessTargetLength < 5) {
+            for (let i = 0; i < 5; i += 1) {
+              if (this.target[i] === '' && colors[i] === 'g') {
+                this.target[i] = letters[i];
+              }
+            }
           }
 
-          this.solution = createSolution(this.solver(letters.join(''), colors.join('')));
-
-          letters.forEach((letter, i) => {
-            const color = colors[i];
-
-            if (this.keyboardColors[letter] === undefined || color === 'G') {
-              this.keyboardColors[letter] = color === 'X' ? 'B' : color;
-            }
-          });
-
-          resolve();
-        }, 0);
-      });
+          this.guess = createGuess();
+        });
     },
 
     onKeyPress(key) {
       if (key === 'BS') {
-        if (this.guess.cursorIndex > 0) {
-          this.guess.cursorIndex -= 1;
-          this.guess.letters = this.guess.letters.slice(0, this.guess.cursorIndex);
-          this.guess.colors[this.guess.cursorIndex] = 'X';
+        if (this.targetEdit === true) {
+          if (this.guessTargetLength > 0) {
+            this.target[this.guessTargetLength - 1] = '';
+          }
+        } else if (this.guessLettersLength > 0) {
+          this.guess.colors[this.guessLettersLength - 1] = 'x';
+          this.guess.letters[this.guessLettersLength - 1] = '';
         }
 
         return;
       }
 
       if (key === 'ENTER') {
-        this.addGuess();
+        if (this.targetEdit === true) {
+          this.onChangeTarget();
+        } else {
+          this.addGuess();
+        }
 
         return;
       }
 
-      if (this.guess.cursorIndex < 5) {
-        this.guess.letters[this.guess.cursorIndex] = key;
-        this.guess.colors[this.guess.cursorIndex] = 'X';
-        this.guess.cursorIndex += 1;
+      if (this.targetEdit === true) {
+        if (this.guessTargetLength < 5) {
+          this.target[this.guessTargetLength] = key;
+        }
+      } else if (this.guessLettersLength < 5) {
+        this.guess.letters[this.guessLettersLength] = key;
+        this.guess.colors[this.guessLettersLength] = 'x';
       }
     },
 
-    onToggleColor(cursorIndex) {
-      if (cursorIndex >= this.guess.cursorIndex) {
+    onToggleColor(index) {
+      if (index >= this.guessLettersLength) {
         return;
       }
 
-      let color = this.guess.colors[cursorIndex];
+      const color = this.guess.colors[index];
 
-      if (color === 'G') {
-        color = 'B';
-      } else if (color === 'Y') {
-        color = 'G';
-      } else {
-        color = 'Y';
-      }
-
-      this.guess.colors[cursorIndex] = color;
+      // eslint-disable-next-line no-nested-ternary
+      this.guess.colors[index] = color === 'g'
+        ? 'b'
+        : (color === 'y' ? 'g' : 'y');
     },
 
     onSelectNextGuess(word) {
       this.guess.letters = word.slice(0, 5).split('');
-      this.guess.colors = Array(5).fill('X');
-      this.guess.cursorIndex = 5;
+      this.guess.colors = Array(5).fill('x');
+
+      this.$nextTick(() => {
+        if (this.guessTargetValid === true) {
+          this.addGuess();
+        }
+      });
     },
 
-    mapColors(color, forceBlack) {
-      if (color === 'G') {
+    onChangeTarget() {
+      this.targetEdit = this.targetEdit !== true;
+
+      if (this.targetEdit !== true) {
+        this.resetSolver(true);
+
+        this.checker = this.guessTargetValid === true
+          ? wordleChecker(this.guessTarget)
+          : undefined;
+      }
+    },
+
+    mapColors(color, forceUnmatch) {
+      if (color === 'g') {
         return 'green';
       }
-      if (color === 'Y') {
+      if (color === 'y') {
         return 'orange';
       }
-      return color === 'B' || forceBlack === true ? 'grey-7' : undefined;
+      return color === 'b' || forceUnmatch === true ? 'grey-7' : undefined;
     },
   },
 
   created() {
     this.keyboardLayout = [
-      'QWERTYUIOP'.split(''),
-      'ASDFGHJKL'.split(''),
-      ['ENTER'].concat('ZXCVBNM'.split('')).concat('BS'),
+      'qwertyuiop'.split(''),
+      'asdfghjkl'.split(''),
+      ['ENTER'].concat('zxcvbnm'.split('')).concat('BS'),
     ];
-
-    this.colors = 'YGB'.split('');
 
     this.resetSolver();
   },

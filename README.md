@@ -2,7 +2,9 @@
 
 Wordle Solver Helper
 
-Base algorithm adapted/stolen from [Wordle Solver](https://notfunatparties.substack.com/p/wordle-solver).
+Source and credits:
+- [Ruining the fun: a Wordle auto-solver](https://notfunatparties.substack.com/p/wordle-solver)
+- [Mathematical optimization over Wordle decision trees](https://www.poirrier.ca/notes/wordle/)
 
 ## Install the dependencies
 ```bash
