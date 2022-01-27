@@ -2,11 +2,18 @@
 
 Wordle Solver Helper
 
+- can provide optimal solve for unknown words
+- can auto check guesses against a known word
+- by default uses the precompiled decision tree
+- if one guess does not use the precompiled decision tree then it switches to dynamic decission tree
+
 Source and credits:
 - [Ruining the fun: a Wordle auto-solver](https://notfunatparties.substack.com/p/wordle-solver)
 - [Mathematical optimization over Wordle decision trees](https://www.poirrier.ca/notes/wordle/)
 
-## Install the dependencies
+## How to run
+
+### Install the dependencies
 ```bash
 yarn
 ```
@@ -23,8 +30,5 @@ yarn run lint
 
 ### Build the app for production
 ```bash
-quasar build
+quasar build -m pwa
 ```
-
-### Customize the configuration
-See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
