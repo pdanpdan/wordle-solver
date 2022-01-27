@@ -101,6 +101,7 @@ module.exports = configure((ctx) => ({
     plugins: [
       'LocalStorage',
       'Notify',
+      'Dialog',
     ],
   },
 

@@ -9,7 +9,7 @@ Wordle Solver Helper
 
 Source and credits:
 - [Ruining the fun: a Wordle auto-solver](https://notfunatparties.substack.com/p/wordle-solver)
-- [Mathematical optimization over Wordle decision trees](https://www.poirrier.ca/notes/wordle/)
+- [Mathematical optimization over Wordle decision trees](https://www.poirrier.ca/notes/wordle)
 
 ## How to run
 
