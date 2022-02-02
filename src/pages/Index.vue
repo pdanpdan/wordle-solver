@@ -95,10 +95,10 @@
               unelevated
               size="28px"
               padding="2px"
-              :color="mapColors(guess.colors[i - 1]) || defaultColors.color"
-              :text-color="mapColors(guess.colors[i - 1]) ? 'white' : defaultColors.textColor"
+              :color="mapColors(guess.matchTypes[i - 1]) || defaultColors.color"
+              :text-color="mapColors(guess.matchTypes[i - 1]) ? 'white' : defaultColors.textColor"
               :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
-              :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.colors[i - 1])])"
+              :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
               @click="onToggleColor(i - 1)"
             >
               <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
@@ -134,18 +134,12 @@
             </div>
             <div class="q-pa-sm">
               <div class="row items-center justify-center q-gutter-md">
-                <q-btn
-                  v-for="(word, i) in solution.words"
+                <w-solution-word
+                  v-for="(props, i) in solutionWordsProps"
                   :key="i"
-                  v-bind="defaultColors"
-                  unelevated
-                  padding="4px 12px"
-                  :disable="word === guessLetters || guessSolved === true || solution.list.length === 0"
-                  :aria-label="$t('solver.btn_use_word', [word])"
-                  @click="onSelectNextGuess(word)"
-                >
-                  <div style="min-width: 5em">{{ word }}</div>
-                </q-btn>
+                  v-bind="props"
+                  @click="onSelectNextGuess"
+                />
               </div>
             </div>
           </template>
@@ -155,18 +149,12 @@
           </div>
           <div v-if="solution.list.length > 0" class="q-pa-sm">
             <div class="row items-center justify-center q-gutter-sm">
-              <q-btn
-                v-for="(word, i) in solution.list.slice(0, 50)"
+              <w-solution-word
+                v-for="(props, i) in solutionListProps"
                 :key="i"
-                v-bind="defaultColors"
-                unelevated
-                padding="2px 8px"
-                :disable="word === guessLetters || guessSolved === true"
-                :aria-label="$t('solver.btn_use_word', [word])"
-                @click="onSelectNextGuess(word)"
-              >
-                <div style="min-width: 5em">{{ word }}</div>
-              </q-btn>
+                v-bind="props"
+                @click="onSelectNextGuess"
+              />
             </div>
           </div>
         </div>
@@ -199,6 +187,7 @@ import { defineComponent } from 'vue';
 import WHelp from 'components/Help.vue';
 import WKeyboard from 'components/Keyboard.vue';
 import WGuessHistoryItem from 'components/GuessHistoryItem.vue';
+import WSolutionWord from 'components/SolutionWord.vue';
 import { getMatchColor, wordleChecker, wordleSolver } from 'lib/solver/wordle-solver.js';
 import {
   darkMode,
@@ -216,7 +205,7 @@ const letterRe = /^[a-z]$/i;
 function createGuess() {
   return {
     letters: Array(5).fill(''),
-    colors: Array(5).fill('x'),
+    matchTypes: Array(5).fill('x'),
     processing: false,
   };
 }
@@ -260,6 +249,7 @@ export default defineComponent({
   components: {
     WGuessHistoryItem,
     WKeyboard,
+    WSolutionWord,
   },
 
   data() {
@@ -306,25 +296,25 @@ export default defineComponent({
 
     guessColorsConflicts() {
       const conflicts = Array(5).fill(false);
-      const { letters, colors } = this.guess;
+      const { letters, matchTypes } = this.guess;
 
       for (let i = 0; i < 5; i += 1) {
         if (letters[i] !== '') {
-          if (colors[i] === 'g') {
+          if (matchTypes[i] === 'g') {
             if (this.guesses.findIndex((guess) => (
-              (guess.letters[i] === letters[i] && guess.colors[i] !== 'g')
-              || (guess.letters[i] !== letters[i] && guess.colors[i] === 'g')
+              (guess.letters[i] === letters[i] && guess.matchTypes[i] !== 'g')
+              || (guess.letters[i] !== letters[i] && guess.matchTypes[i] === 'g')
             )) > -1) {
               conflicts[i] = true;
             }
-          } else if (colors[i] === 'y') {
+          } else if (matchTypes[i] === 'y') {
             if (this.guesses.findIndex((guess) => (
-              guess.letters[i] === letters[i] && guess.colors[i] !== 'y'
+              guess.letters[i] === letters[i] && guess.matchTypes[i] !== 'y'
             )) > -1) {
               conflicts[i] = true;
             }
           } else if (this.guesses.findIndex((guess) => (
-            guess.letters[i] === letters[i] && (guess.colors[i] === 'g' || guess.colors[i] === 'y')
+            guess.letters[i] === letters[i] && (guess.matchTypes[i] === 'g' || guess.matchTypes[i] === 'y')
           )) > -1) {
             conflicts[i] = true;
           }
@@ -358,9 +348,9 @@ export default defineComponent({
       const free = arr5.map((_, i) => i).filter((i) => this.target[i] === '');
 
       if (free.length > 0) {
-        this.guesses.forEach(({ letters, colors }) => {
+        this.guesses.forEach(({ letters, matchTypes }) => {
           for (let i = 0; i < 5; i += 1) {
-            if (colors[i] === 'y') {
+            if (matchTypes[i] === 'y') {
               free.forEach((j) => {
                 if (j !== i && opts[j].indexOf(letters[i]) === -1) {
                   opts[j].push(letters[i]);
@@ -370,9 +360,9 @@ export default defineComponent({
           }
         });
 
-        this.guesses.forEach(({ letters, colors }) => {
+        this.guesses.forEach(({ letters, matchTypes }) => {
           for (let i = 0; i < 5; i += 1) {
-            if (colors[i] !== 'g' && opts[i].indexOf(letters[i]) > -1) {
+            if (matchTypes[i] !== 'g' && opts[i].indexOf(letters[i]) > -1) {
               opts[i] = opts[i].filter((l) => l !== letters[i]);
             }
           }
@@ -405,12 +395,37 @@ export default defineComponent({
 
       const guess = this.guesses[guessesLength - 1];
 
-      return this.guessTarget === guess.letters.join('') || guess.colors.join('') === 'ggggg';
+      return this.guessTarget === guess.letters.join('') || guess.matchTypes.join('') === 'ggggg';
     },
 
     canSubmit() {
       return (this.targetMode === true && this.guessTargetValid === true)
         || (this.targetMode !== true && this.guessLettersValid === true && this.guessColorsValid === true);
+    },
+
+    solutionWordsProps() {
+      const solutionListEmpty = this.solution.list.length === 0;
+
+      return this.solution.words.map((word) => ({
+        word,
+        disable: this.guessSolved === true || word === this.guessLetters || solutionListEmpty === true,
+      }));
+    },
+
+    solutionListProps() {
+      const listLength = this.solution.list.length;
+      let list;
+
+      if (listLength <= 30) {
+        list = this.solution.list;
+      } else {
+        list = this.solution.list.slice(0, 29).concat(`... ${ listLength - 30 }`);
+      }
+
+      return list.map((word) => ({
+        word,
+        disable: this.guessSolved === true || word === this.guessLetters || word[0] === '.',
+      }));
     },
   },
 
@@ -424,7 +439,7 @@ export default defineComponent({
     guessLetters() {
       if (this.solution.list.length === 1 && this.solution.list[0] === this.guessLetters) {
         for (let i = 0; i < 5; i += 1) {
-          this.guess.colors[i] = 'g';
+          this.guess.matchTypes[i] = 'g';
         }
 
         return;
@@ -436,11 +451,11 @@ export default defineComponent({
       for (let i = 0; i < iMax; i += 1) {
         const letter = this.guess.letters[i];
 
-        if (this.guesses.findIndex(({ letters, colors }) => letters[i] === letter && colors[i] === 'g') > -1) {
-          this.guess.colors[i] = 'g';
+        if (this.guesses.findIndex(({ letters, matchTypes }) => letters[i] === letter && matchTypes[i] === 'g') > -1) {
+          this.guess.matchTypes[i] = 'g';
           usedLetters[letter] = undefined;
         } else if (usedLetters[letter] === 'b') {
-          this.guess.colors[i] = 'b';
+          this.guess.matchTypes[i] = 'b';
           usedLetters[letter] = undefined;
         }
       }
@@ -448,8 +463,8 @@ export default defineComponent({
       for (let i = 0; i < iMax; i += 1) {
         const letter = this.guess.letters[i];
 
-        if (usedLetters[letter] !== undefined && this.guess.colors[i] !== 'g') {
-          this.guess.colors[i] = 'y';
+        if (usedLetters[letter] !== undefined && this.guess.matchTypes[i] !== 'g') {
+          this.guess.matchTypes[i] = 'y';
           usedLetters[letter] = undefined;
         }
       }
@@ -494,9 +509,9 @@ export default defineComponent({
           this.target[i] = '';
         }
 
-        this.guesses.forEach(({ letters, colors }) => {
+        this.guesses.forEach(({ letters, matchTypes }) => {
           for (let i = 0; i < 5; i += 1) {
-            if (colors[i] === 'g') {
+            if (matchTypes[i] === 'g') {
               this.target[i] = letters[i];
             }
           }
@@ -509,13 +524,13 @@ export default defineComponent({
         return;
       }
 
-      const { letters, colors } = this.guess;
+      const { letters, matchTypes } = this.guess;
 
       if (this.checker !== undefined) {
         const result = this.checker(this.guessLetters);
 
         for (let i = 0; i < 5; i += 1) {
-          colors[i] = result[i];
+          matchTypes[i] = result[i];
         }
       }
 
@@ -523,18 +538,18 @@ export default defineComponent({
       this.guess.processing = true;
 
       this.solver
-        .solve(colors.join(''), this.guessLetters)
+        .solve(matchTypes.join(''), this.guessLetters)
         .then((solution) => {
           this.solution = createSolution(solution);
 
           this.guesses.push({
             letters,
-            colors,
+            matchTypes,
           });
 
           if (this.guessTargetLength < 5) {
             for (let i = 0; i < 5; i += 1) {
-              if (this.target[i] === '' && colors[i] === 'g') {
+              if (this.target[i] === '' && matchTypes[i] === 'g') {
                 this.target[i] = letters[i];
               }
             }
@@ -551,7 +566,7 @@ export default defineComponent({
             this.target[this.guessTargetLength - 1] = '';
           }
         } else if (this.guessLettersLength > 0) {
-          this.guess.colors[this.guessLettersLength - 1] = 'x';
+          this.guess.matchTypes[this.guessLettersLength - 1] = 'x';
           this.guess.letters[this.guessLettersLength - 1] = '';
         }
 
@@ -574,7 +589,7 @@ export default defineComponent({
         }
       } else if (this.guessLettersLength < 5) {
         this.guess.letters[this.guessLettersLength] = key;
-        this.guess.colors[this.guessLettersLength] = 'x';
+        this.guess.matchTypes[this.guessLettersLength] = 'x';
       }
     },
 
@@ -583,17 +598,17 @@ export default defineComponent({
         return;
       }
 
-      const color = this.guess.colors[index];
+      const color = this.guess.matchTypes[index];
 
       // eslint-disable-next-line no-nested-ternary
-      this.guess.colors[index] = color === 'g'
+      this.guess.matchTypes[index] = color === 'g'
         ? 'b'
         : (color === 'y' ? 'g' : 'y');
     },
 
     onSelectNextGuess(word) {
       this.guess.letters = word.slice(0, 5).split('');
-      this.guess.colors = Array(5).fill('x');
+      this.guess.matchTypes = Array(5).fill('x');
 
       this.$nextTick(() => {
         if (this.guessTargetValid === true) {

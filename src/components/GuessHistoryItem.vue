@@ -42,7 +42,7 @@ export default defineComponent({
 
   computed: {
     guessMatchColors() {
-      return this.guess.colors.map((matchType) => getMatchColor(matchType, true));
+      return this.guess.matchTypes.map((matchType) => getMatchColor(matchType, true));
     },
 
     guessLetters() {

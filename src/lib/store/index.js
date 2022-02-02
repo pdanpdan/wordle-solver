@@ -51,13 +51,13 @@ const charsMatchType = computed(() => {
   const chars = {};
 
   if (targetMode.value !== true) {
-    guesses.value.forEach(({ letters, colors }) => {
+    guesses.value.forEach(({ letters, matchTypes }) => {
       for (let i = 0; i < 5; i += 1) {
         const letter = letters[i];
-        const color = colors[i];
+        const matchType = matchTypes[i];
 
-        if (chars[letter] === undefined || color === 'g') {
-          chars[letter] = color === 'x' ? 'b' : color;
+        if (chars[letter] === undefined || matchType === 'g') {
+          chars[letter] = matchType === 'x' ? 'b' : matchType;
         }
       }
     });
