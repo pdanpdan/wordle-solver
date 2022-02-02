@@ -60,7 +60,9 @@
           :text-color="guessTargetColor"
           disable
         >
-          <div v-if="targetMode === true" style="min-width: 1.715em">{{ target[i - 1] || '&nbsp;' }}</div>
+          <div v-if="playMode === true" style="min-width: 1.715em">?</div>
+
+          <div v-else-if="targetMode === true" style="min-width: 1.715em">{{ target[i - 1] || '&nbsp;' }}</div>
 
           <template v-else>
             <div v-for="(letter, j) in guessTargetOptions[i - 1].opts" :key="j" class="w-target__suggestion">{{ letter }}</div>
@@ -74,7 +76,7 @@
           round
           dense
           size="14px"
-          :icon="targetMode === true ? 'send' : 'edit'"
+          :icon="targetMode === true ? 'send' : (playMode === true ? 'visibility' : 'edit')"
           :color="targetMode === true && canSubmit === true ? 'primary' : undefined"
           :aria-label="targetMode === true ? $t('solver.btn_save_target') : $t('solver.btn_edit_target')"
           :disable="targetMode === true && canSubmit !== true"
@@ -82,62 +84,81 @@
         />
       </div>
 
-      <q-separator v-if="targetMode !== true" class="full-width"/>
+      <template v-if="targetMode === true && shareUrl">
+        <q-separator class="full-width"/>
 
-      <q-scroll-area v-if="targetMode !== true" class="col full-width">
-        <div class="column no-wrap items-center">
-          <w-guess-history-item
-            v-for="(guess, j) in guessesVisible"
-            :key="j"
-            :guess="guess"
-            @undo="undoSolver(j)"
-          />
+        <q-input
+          class="full-width q-mt-md cursor-pointer"
+          :model-value="shareUrl"
+          input-class="text-center cursor-pointer"
+          standout
+          dense
+          readonly
+          @click="onShareClick"
+        >
+          <template #append>
+            <q-icon name="content_copy" @click="onShareClick"/>
+          </template>
+        </q-input>
+      </template>
 
-          <div v-if="guessSolved !== true && solutionListLength > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
-            <q-btn
-              v-for="i in 5"
-              :key="i"
-              unelevated
-              size="28px"
-              padding="2px"
-              :color="mapColors(guess.matchTypes[i - 1]) || defaultColors.color"
-              :text-color="mapColors(guess.matchTypes[i - 1]) ? 'white' : defaultColors.textColor"
-              :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
-              :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
-              @click="onToggleColor(i - 1)"
-            >
-              <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
-              <q-badge
-                v-if="guessColorsConflicts[i - 1]"
-                color="negative"
-                rounded
-                floating
-              />
-            </q-btn>
+      <template v-if="targetMode !== true">
+        <q-separator class="full-width"/>
 
-            <q-btn
-              class="q-ml-md"
-              flat
-              round
-              dense
-              size="14px"
-              icon="send"
-              color="primary"
-              :disable="guessLettersValid !== true || guessColorsValid !== true"
-              :aria-label="$t('solver.btn_add_guess')"
-              @click="addGuess"
+        <q-scroll-area class="col full-width">
+          <div class="column no-wrap items-center">
+            <w-guess-history-item
+              v-for="(guess, j) in guessesVisible"
+              :key="j"
+              :guess="guess"
+              @undo="undoSolver(j)"
             />
-          </div>
 
-          <q-separator class="full-width" spaced />
+            <div v-if="guessSolved !== true && solutionListLength > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
+              <q-btn
+                v-for="i in 5"
+                :key="i"
+                unelevated
+                size="28px"
+                padding="2px"
+                v-bind="guessMatchColors[i - 1]"
+                :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
+                :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
+                @click="onToggleColor(i - 1)"
+              >
+                <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
+                <q-badge
+                  v-if="guessColorsConflicts[i - 1]"
+                  color="negative"
+                  rounded
+                  floating
+                />
+              </q-btn>
 
-          <template v-if="solutionWordsLength > 0">
+              <q-btn
+                class="q-ml-md"
+                flat
+                round
+                dense
+                size="14px"
+                icon="send"
+                color="primary"
+                :disable="guessLettersValid !== true || guessColorsValid !== true"
+                :aria-label="$t('solver.btn_add_guess')"
+                @click="addGuess"
+              />
+            </div>
+
+            <q-separator class="full-width" spaced/>
+
             <div class="row text-subtitle2 text-center">
               {{ $t('solver.guesses', [guessesLength]) }}
-              <q-separator vertical spaced />
-              {{ $t('solver.suggested_words', [solutionWordsLength]) }}
+              <template v-if="playMode !== true && solutionWordsLength > 0">
+                <q-separator vertical spaced/>
+                {{ $t('solver.suggested_words', [solutionWordsLength]) }}
+              </template>
             </div>
-            <div class="q-pa-sm">
+            <div v-if="playMode !== true && solutionWordsLength > 0" class="q-pa-sm">
               <div class="row items-center justify-center q-gutter-md">
                 <w-solution-word
                   v-for="(props, i) in solutionWordsProps"
@@ -147,28 +168,30 @@
                 />
               </div>
             </div>
-          </template>
 
-          <div class="text-subtitle2 text-center">
-            {{ $t('solver.matching_words', [solutionListLength]) }}
+            <template v-if="playMode !== true">
+              <div class="text-subtitle2 text-center">
+                {{ $t('solver.matching_words', [solutionListLength]) }}
+              </div>
+              <div v-if="solutionListLength > 0" class="q-pa-sm">
+                <div class="row items-center justify-center q-gutter-sm">
+                  <w-solution-word
+                    v-for="(props, i) in solutionListProps"
+                    :key="i"
+                    v-bind="props"
+                    @click="onSelectNextGuess"
+                  />
+                </div>
+              </div>
+            </template>
           </div>
-          <div v-if="solutionListLength > 0" class="q-pa-sm">
-            <div class="row items-center justify-center q-gutter-sm">
-              <w-solution-word
-                v-for="(props, i) in solutionListProps"
-                :key="i"
-                v-bind="props"
-                @click="onSelectNextGuess"
-              />
-            </div>
-          </div>
-        </div>
-      </q-scroll-area>
+        </q-scroll-area>
+      </template>
 
-      <q-space v-else />
+      <q-space v-else/>
 
       <div class="full-width relative-position">
-        <q-separator spaced />
+        <q-separator spaced/>
 
         <q-linear-progress
           v-if="guess.processing"
@@ -179,24 +202,32 @@
         />
       </div>
 
-      <w-keyboard :can-submit="canSubmit" @click="onKeyPress" />
+      <w-keyboard :can-submit="canSubmit" @click="onKeyPress"/>
     </div>
   </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
+import { copyToClipboard } from 'quasar';
 
 import WHelp from 'components/Help.vue';
 import WKeyboard from 'components/Keyboard.vue';
 import WGuessHistoryItem from 'components/GuessHistoryItem.vue';
 import WSolutionWord from 'components/SolutionWord.vue';
 
-import { getMatchColor, wordleChecker, wordleSolver } from 'lib/solver/wordle-solver.js';
+import {
+  getMatchColor,
+  getPlayWord,
+  getPlayWordIndex,
+  wordleChecker,
+  wordleSolver,
+} from 'lib/solver/wordle-solver.js';
 import {
   darkMode,
   hardMode,
   targetMode,
+  playMode,
 
   defaultColors,
 
@@ -263,6 +294,8 @@ export default defineComponent({
 
       targetMode,
       target: createTarget(),
+
+      playMode,
 
       guess: createGuess(),
       solution: createSolution(),
@@ -381,6 +414,18 @@ export default defineComponent({
       }
 
       return valid;
+    },
+
+    guessMatchColors() {
+      return this.playMode === true
+        ? this.guess.matchTypes.map(() => ({
+          color: this.defaultColors.color,
+          textColor: this.defaultColors.textColor,
+        }))
+        : this.guess.matchTypes.map((matchType) => ({
+          color: getMatchColor(matchType) || this.defaultColors.color,
+          textColor: getMatchColor(matchType) ? 'white' : this.defaultColors.textColor,
+        }));
     },
 
     guessTarget() {
@@ -528,6 +573,23 @@ export default defineComponent({
         word,
         disable: disable === true || word === guessLetters || word[0] === '.',
       }));
+    },
+
+    shareUrl() {
+      if (this.guessTargetValid === true) {
+        const gameId = getPlayWordIndex(this.guessTarget);
+
+        if (gameId !== null) {
+          const { href } = this.$router.resolve({
+            name: 'solver',
+            params: { gameId },
+          });
+
+          return `${ window.location.origin }${ href }`;
+        }
+      }
+
+      return undefined;
     },
   },
 
@@ -707,6 +769,7 @@ export default defineComponent({
         }
       } else {
         this.guessTargetPrev = guessTarget;
+        this.playMode = false;
       }
     },
 
@@ -716,8 +779,22 @@ export default defineComponent({
       });
     },
 
-    mapColors(color, forceUnmatch) {
-      return getMatchColor(color, forceUnmatch);
+    onShareClick() {
+      copyToClipboard(this.shareUrl)
+        .then(() => {
+          this.$q.notify({
+            message: this.$t('solver.share_url_copied'),
+            color: 'positive',
+            textColor: 'white',
+          });
+        })
+        .catch(() => {
+          this.$q.notify({
+            message: this.$t('solver.share_url_not_copied'),
+            color: 'negative',
+            textColor: 'white',
+          });
+        });
     },
 
     nextColorMatchType(color) {
@@ -733,6 +810,17 @@ export default defineComponent({
 
   created() {
     this.resetSolver();
+  },
+
+  mounted() {
+    if (this.$route.params.gameId > 0) {
+      const word = getPlayWord(this.$route.params.gameId);
+
+      if (word !== null) {
+        this.target = createTarget(word);
+        this.playMode = true;
+      }
+    }
   },
 });
 </script>

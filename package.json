@@ -1,10 +1,10 @@
 {
   "name": "wordle-solver",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Wordle Solver Helper",
   "productName": "Wordle Solver",
   "author": "Dan Popescu <pdan.popescu@gmail.com>",
-  "private": true,
+  "private": false,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "test": "echo \"No test specified\" && exit 0"
@@ -12,7 +12,7 @@
   "dependencies": {
     "@quasar/extras": "^1.12.4",
     "core-js": "^3.21.0",
-    "quasar": "^2.5.0",
+    "quasar": "^2.5.1",
     "vue": "^3.2.29",
     "vue-i18n": "^9.2.0-beta.30",
     "vue-router": "^4.0.12",

@@ -36,6 +36,8 @@
     "guesses": "Guesses: {0}",
     "matching_words": "Matching words: {0}",
     "reset": "Reset",
+    "share_url_copied": "The url was copied to clipboard",
+    "share_url_not_copied": "Please use other method to copy",
     "suggested_words": "Suggested words: {0}",
     "type_in_place": "present in place",
     "type_not_in_place": "present in another place",

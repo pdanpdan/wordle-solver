@@ -5,8 +5,8 @@
     v-bind="props"
     @click="onClick"
   >
-    <q-icon v-if="char === 'BS'" class="q-pr-xs" name="backspace" />
-    <q-icon v-else-if="char === 'ENTER'" class="q-pl-sm q-pr-xs" name="send" />
+    <q-icon v-if="char === 'BS'" class="q-pr-xs" name="backspace"/>
+    <q-icon v-else-if="char === 'ENTER'" class="q-pl-sm q-pr-xs" name="send"/>
     <div v-else style="min-width: 1.4em">{{ char }}</div>
   </q-btn>
 </template>

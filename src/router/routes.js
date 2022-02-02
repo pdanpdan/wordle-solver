@@ -1,6 +1,7 @@
 const routes = [
   {
-    path: '/',
+    name: 'solver',
+    path: '/:gameId?',
     component: () => import('pages/Index.vue'),
   },
 

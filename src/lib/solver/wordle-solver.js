@@ -325,8 +325,19 @@ function getMatchColor(matchType, forceUnmatch) {
   return forceUnmatch === true ? 'w-match-b' : undefined;
 }
 
+function getPlayWord(index) {
+  return fullWordsList[index] || null;
+}
+
+function getPlayWordIndex(word) {
+  const index = fullWordsList.indexOf(word);
+  return index > -1 ? index : null;
+}
+
 export {
   getMatchColor,
+  getPlayWord,
+  getPlayWordIndex,
   wordleSolver,
   wordleChecker,
 };

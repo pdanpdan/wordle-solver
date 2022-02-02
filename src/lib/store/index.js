@@ -43,6 +43,9 @@ const defaultColors = computed(() => (
 // target edit mode
 const targetMode = ref(false);
 
+// play mode
+const playMode = ref(false);
+
 // list of tried guesses
 const guesses = ref([]);
 
@@ -70,6 +73,7 @@ export {
   darkMode,
   hardMode,
   targetMode,
+  playMode,
 
   defaultColors,
 
