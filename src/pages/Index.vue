@@ -481,8 +481,9 @@ export default defineComponent({
   },
 
   watch: {
-    hardMode() {
+    hardMode(hardMode) {
       this.resetSolver(true);
+      this.$q.localStorage.set('hardMode', hardMode);
     },
 
     guessLetters() {
@@ -712,7 +713,8 @@ export default defineComponent({
   },
 
   mounted() {
-    this.darkMode = this.$q.localStorage.getItem('darkMode');
+    this.darkMode = this.$q.localStorage.getItem('darkMode') === true;
+    this.hardMode = this.$q.localStorage.getItem('hardMode') === true;
   },
 });
 </script>
