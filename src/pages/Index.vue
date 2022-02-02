@@ -70,45 +70,23 @@
           round
           dense
           size="14px"
-          :icon="targetEdit === true ? 'send' : 'edit'"
-          :color="targetEdit === true && guessTargetValid === true ? 'primary' : undefined"
-          :aria-label="targetEdit === true ? $t('solver.btn_save_target') : $t('solver.btn_edit_target')"
+          :icon="targetMode === true ? 'send' : 'edit'"
+          :color="targetMode === true && guessTargetValid === true ? 'primary' : undefined"
+          :aria-label="targetMode === true ? $t('solver.btn_save_target') : $t('solver.btn_edit_target')"
           @click="onChangeTarget()"
         />
       </div>
 
-      <q-separator v-if="targetEdit !== true" class="full-width"/>
+      <q-separator v-if="targetMode !== true" class="full-width"/>
 
-      <q-scroll-area v-if="targetEdit !== true" class="col full-width">
+      <q-scroll-area v-if="targetMode !== true" class="col full-width">
         <div class="column no-wrap items-center">
-          <div
-            v-for="(guessItem, j) in guessesVisible"
+          <w-guess-history-item
+            v-for="(guess, j) in guessesVisible"
             :key="j"
-            class="q-mt-sm row no-wrap items-center q-gutter-x-sm"
-          >
-            <q-btn
-              v-for="i in 5"
-              :key="i"
-              unelevated
-              size="28px"
-              padding="2px"
-              :color="mapColors(guessItem.colors[i - 1], true)"
-              disable
-            >
-              <div style="min-width: 1.715em">{{ guessItem.letters[i - 1] || '&nbsp;' }}</div>
-            </q-btn>
-
-            <q-btn
-              class="q-ml-md"
-              flat
-              round
-              dense
-              size="14px"
-              icon="undo"
-              :aria-label="$t('solver.btn_undo')"
-              @click="undoSolver(j)"
-            />
-          </div>
+            :guess="guess"
+            @undo="undoSolver(j)"
+          />
 
           <div v-if="guessSolved !== true && solution.list.length > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
             <q-btn
@@ -183,7 +161,7 @@
                 v-bind="defaultColors"
                 unelevated
                 padding="2px 8px"
-                :disable="word === guessLetters || guessSolved === true || solution.list.length === 0"
+                :disable="word === guessLetters || guessSolved === true"
                 :aria-label="$t('solver.btn_use_word', [word])"
                 @click="onSelectNextGuess(word)"
               >
@@ -208,49 +186,30 @@
         />
       </div>
 
-      <div class="column no-wrap q-gutter-y-md items-center">
-        <div v-for="(row, i) in keyboardLayout" :key="i" class="row no-wrap q-gutter-x-xs">
-          <q-btn
-            v-for="(key, j) in row"
-            :key="j"
-            unelevated
-            padding="7px"
-            :color="
-              key === 'ENTER' && (
-                (targetEdit === true && guessTargetValid === true)
-                || (targetEdit !== true && guessLettersValid === true && guessColorsValid === true)
-              )
-                ? 'primary'
-                : mapColors(keyboardColors[key]) || defaultColors.color
-            "
-            :text-color="
-              (
-                key === 'ENTER' && (
-                  (targetEdit === true && guessTargetValid === true)
-                  || (targetEdit !== true && guessLettersValid === true && guessColorsValid === true)
-                )
-              ) || mapColors(keyboardColors[key])
-                ? 'white'
-                : defaultColors.textColor
-            "
-            :aria-label="$t('solver.btn_keyboard', [key])"
-            @click="onKeyPress(key)"
-          >
-            <q-icon v-if="key === 'BS'" class="q-pr-xs" name="backspace" />
-            <q-icon v-else-if="key === 'ENTER'" class="q-pl-sm q-pr-xs" name="send" />
-            <div v-else style="min-width: 1.4em">{{ key }}</div>
-          </q-btn>
-        </div>
-      </div>
+      <w-keyboard
+        :can-submit="canSubmit"
+        @click="onKeyPress"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import HelpComponent from 'components/Help.vue';
-import { matchTypes, wordleChecker, wordleSolver } from 'lib/solver/wordle-solver.js';
-import { darkMode, hardMode } from 'lib/store';
+import WHelp from 'components/Help.vue';
+import WKeyboard from 'components/Keyboard.vue';
+import WGuessHistoryItem from 'components/GuessHistoryItem.vue';
+import { getMatchColor, wordleChecker, wordleSolver } from 'lib/solver/wordle-solver.js';
+import {
+  darkMode,
+  hardMode,
+  targetMode,
+
+  defaultColors,
+
+  guesses,
+  charsMatchType,
+} from 'lib/store';
 
 const letterRe = /^[a-z]$/i;
 
@@ -298,15 +257,25 @@ function createTarget(word) {
 export default defineComponent({
   name: 'PageIndex',
 
+  components: {
+    WGuessHistoryItem,
+    WKeyboard,
+  },
+
   data() {
     return {
       darkMode,
       hardMode,
+
+      targetMode,
       target: createTarget(),
-      targetEdit: false,
-      guesses: [],
+
+      guesses,
       guess: createGuess(),
       solution: createSolution(),
+
+      defaultColors,
+      charsMatchType,
     };
   },
 
@@ -418,11 +387,11 @@ export default defineComponent({
         return 'positive';
       }
 
-      if (this.guessTargetLength > 0 && (this.targetEdit !== true || this.guessTargetLength > 4)) {
+      if (this.guessTargetLength > 0 && (this.targetMode !== true || this.guessTargetLength > 4)) {
         return 'negative';
       }
 
-      return this.targetEdit !== true
+      return this.targetMode !== true
         ? 'grey-6'
         : this.defaultColors.textColor;
     },
@@ -439,35 +408,9 @@ export default defineComponent({
       return this.guessTarget === guess.letters.join('') || guess.colors.join('') === 'ggggg';
     },
 
-    keyboardColors() {
-      const keys = {};
-
-      if (this.targetEdit !== true) {
-        this.guesses.forEach(({ letters, colors }) => {
-          for (let i = 0; i < 5; i += 1) {
-            const letter = letters[i];
-            const color = colors[i];
-
-            if (keys[letter] === undefined || color === 'g') {
-              keys[letter] = color === 'x' ? 'b' : color;
-            }
-          }
-        });
-      }
-
-      return keys;
-    },
-
-    defaultColors() {
-      return this.darkMode === true
-        ? {
-          color: 'grey-10',
-          textColor: 'white',
-        }
-        : {
-          color: 'grey-3',
-          textColor: 'dark',
-        };
+    canSubmit() {
+      return (this.targetMode === true && this.guessTargetValid === true)
+        || (this.targetMode !== true && this.guessLettersValid === true && this.guessColorsValid === true);
     },
   },
 
@@ -487,7 +430,7 @@ export default defineComponent({
         return;
       }
 
-      const usedLetters = { ...this.keyboardColors };
+      const usedLetters = { ...this.charsMatchType };
       const iMax = this.guessLettersLength;
 
       for (let i = 0; i < iMax; i += 1) {
@@ -603,7 +546,7 @@ export default defineComponent({
 
     onKeyPress(key) {
       if (key === 'BS') {
-        if (this.targetEdit === true) {
+        if (this.targetMode === true) {
           if (this.guessTargetLength > 0) {
             this.target[this.guessTargetLength - 1] = '';
           }
@@ -616,7 +559,7 @@ export default defineComponent({
       }
 
       if (key === 'ENTER') {
-        if (this.targetEdit === true) {
+        if (this.targetMode === true) {
           this.onChangeTarget();
         } else {
           this.addGuess();
@@ -625,7 +568,7 @@ export default defineComponent({
         return;
       }
 
-      if (this.targetEdit === true) {
+      if (this.targetMode === true) {
         if (this.guessTargetLength < 5) {
           this.target[this.guessTargetLength] = key;
         }
@@ -660,24 +603,21 @@ export default defineComponent({
     },
 
     onChangeTarget() {
-      this.targetEdit = this.targetEdit !== true;
+      this.targetMode = this.targetMode !== true;
 
-      if (this.targetEdit !== true) {
+      if (this.targetMode !== true) {
         this.resetSolver(true);
       }
     },
 
     onShowHelp() {
       this.$q.dialog({
-        component: HelpComponent,
+        component: WHelp,
       });
     },
 
     mapColors(color, forceUnmatch) {
-      if (matchTypes.indexOf(color) > -1) {
-        return `w-match-${ color }`;
-      }
-      return forceUnmatch === true ? 'w-match-b' : undefined;
+      return getMatchColor(color, forceUnmatch);
     },
 
     nextColorMatchType(color) {
@@ -692,12 +632,6 @@ export default defineComponent({
   },
 
   created() {
-    this.keyboardLayout = [
-      'qwertyuiop'.split(''),
-      'asdfghjkl'.split(''),
-      ['ENTER'].concat('zxcvbnm'.split('')).concat('BS'),
-    ];
-
     this.resetSolver();
   },
 });

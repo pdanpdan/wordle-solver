@@ -3,6 +3,9 @@
     "go_home": "Go Home",
     "nothing_here": "Oops. Nothing here..."
   },
+  "guess": {
+    "btn_undo": "Undo guess"
+  },
   "help": {
     "btn_close": "Close",
     "credits": "Credits:",
@@ -15,19 +18,20 @@
     "source_code": "Source code:",
     "title": "Wordle puzzle solver"
   },
+  "keyboard": {
+    "btn_keyboard": "Virtual key {0}"
+  },
   "solver": {
     "btn_add_guess": "Add guess",
     "btn_change_color": "Mark letter {0} as {1}",
     "btn_edit_target": "Edit target word",
     "btn_help": "Show help dialog",
-    "btn_keyboard": "Virtual key {0}",
     "btn_reset_solver": "Reset solver",
     "btn_save_target": "Save target word",
     "btn_to_dark_mode": "Switch to dark mode",
     "btn_to_easy_mode": "Switch to easy mode",
     "btn_to_hard_mode": "Switch to hard mode",
     "btn_to_light_mode": "Switch to light mode",
-    "btn_undo": "Undo guess",
     "btn_use_word": "Use word {0} as next guess",
     "guesses": "Guesses: {0}",
     "matching_words": "Matching words: {0}",

@@ -318,8 +318,15 @@ function wordleChecker(target) {
   };
 }
 
+function getMatchColor(matchType, forceUnmatch) {
+  if (matchTypes.indexOf(matchType) > -1) {
+    return `w-match-${ matchType }`;
+  }
+  return forceUnmatch === true ? 'w-match-b' : undefined;
+}
+
 export {
-  matchTypes,
+  getMatchColor,
   wordleSolver,
   wordleChecker,
 };
