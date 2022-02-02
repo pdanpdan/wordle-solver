@@ -2,9 +2,7 @@
   <q-btn
     unelevated
     padding="7px"
-    :color="color"
-    :text-color="textColor"
-    :aria-label="label"
+    v-bind="props"
     @click="onClick"
   >
     <q-icon v-if="char === 'BS'" class="q-pr-xs" name="backspace" />
@@ -31,24 +29,26 @@ export default defineComponent({
   ],
 
   computed: {
-    matchColor() {
-      return getMatchColor(charsMatchType.value[this.char]);
-    },
+    props() {
+      const matchColor = getMatchColor(charsMatchType.value[this.char]);
+      const ariaLabel = this.$t('keyboard.btn_keyboard', [this.char]);
 
-    color() {
-      return this.char === 'ENTER' && this.canSubmit === true
-        ? 'primary'
-        : this.matchColor || defaultColors.value.color;
-    },
+      if (this.char === 'ENTER' && this.canSubmit === true) {
+        return {
+          color: 'primary',
+          textColor: 'w-mode-dark',
+          ariaLabel,
+        };
+      }
 
-    textColor() {
-      return (this.char === 'ENTER' && this.canSubmit === true) || this.matchColor !== undefined
-        ? 'w-mode-dark'
-        : defaultColors.value.textColor;
-    },
-
-    label() {
-      return this.$t('keyboard.btn_keyboard', [this.char]);
+      return {
+        color: matchColor || defaultColors.value.color,
+        textColor: matchColor !== undefined
+          ? 'w-mode-dark'
+          : defaultColors.value.textColor,
+        ariaLabel,
+        disable: this.char === 'ENTER',
+      };
     },
   },
 
