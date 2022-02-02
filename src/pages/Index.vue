@@ -203,7 +203,7 @@
           v-if="guess.processing"
           class="absolute-top"
           indeterminate
-          color="info"
+          color="primary"
           size="8px"
         />
       </div>
@@ -249,7 +249,8 @@
 <script>
 import { defineComponent } from 'vue';
 import HelpComponent from 'components/Help.vue';
-import { wordleSolver, wordleChecker } from '../lib/wordle-solver.js';
+import { matchTypes, wordleChecker, wordleSolver } from 'lib/solver/wordle-solver.js';
+import { darkMode, hardMode } from 'lib/store';
 
 const letterRe = /^[a-z]$/i;
 
@@ -299,7 +300,8 @@ export default defineComponent({
 
   data() {
     return {
-      hardMode: false,
+      darkMode,
+      hardMode,
       target: createTarget(),
       targetEdit: false,
       guesses: [],
@@ -456,17 +458,6 @@ export default defineComponent({
       return keys;
     },
 
-    darkMode: {
-      get() {
-        return this.$q.dark.isActive;
-      },
-
-      set(val) {
-        this.$q.dark.set(val === true);
-        this.$q.localStorage.set('darkMode', this.$q.dark.isActive);
-      },
-    },
-
     defaultColors() {
       return this.darkMode === true
         ? {
@@ -481,9 +472,10 @@ export default defineComponent({
   },
 
   watch: {
-    hardMode(hardMode) {
-      this.resetSolver(true);
-      this.$q.localStorage.set('hardMode', hardMode);
+    hardMode() {
+      this.$nextTick(() => {
+        this.resetSolver(true);
+      });
     },
 
     guessLetters() {
@@ -682,13 +674,10 @@ export default defineComponent({
     },
 
     mapColors(color, forceUnmatch) {
-      if (color === 'g') {
-        return 'green';
+      if (matchTypes.indexOf(color) > -1) {
+        return `w-match-${ color }`;
       }
-      if (color === 'y') {
-        return 'orange';
-      }
-      return color === 'b' || forceUnmatch === true ? 'grey-7' : undefined;
+      return forceUnmatch === true ? 'w-match-b' : undefined;
     },
 
     nextColorMatchType(color) {
@@ -710,11 +699,6 @@ export default defineComponent({
     ];
 
     this.resetSolver();
-  },
-
-  mounted() {
-    this.darkMode = this.$q.localStorage.getItem('darkMode') === true;
-    this.hardMode = this.$q.localStorage.getItem('hardMode') === true;
   },
 });
 </script>

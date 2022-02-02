@@ -5,7 +5,7 @@ import treeHard from './tree-hard.js';
 const fullWordsList = [...new Set(treeEasy.map((o) => o[1]))].sort();
 const guessWordRe = /^[a-z]{5}$/i;
 const guessResultRe = /^[gyb]$/i;
-const colours = ['g', 'y', 'b'];
+const matchTypes = ['g', 'y', 'b'];
 
 const cache = {};
 
@@ -26,11 +26,11 @@ function listFilter(list, filters) {
     let wordB = word.split('');
 
     for (let i = filtersR.length - 1; i >= 0; i -= 1) {
-      const [letter, position, colour] = filtersR[i];
+      const [letter, position, matchType] = filtersR[i];
 
       if (
-        (colour === 'g' && word[position] !== letter)
-        || (colour === 'y' && (
+        (matchType === 'g' && word[position] !== letter)
+        || (matchType === 'y' && (
           word.indexOf(letter) === -1
           || word[position] === letter
         ))
@@ -54,14 +54,14 @@ function listFilter(list, filters) {
 }
 
 function wordScoreCalculate(item, p = 1, depth = 0) {
-  return colours.reduce((acc, colour) => {
-    if (item[colour] !== undefined && item[colour].list.length > 0) {
-      const calcP = item[colour].p * p;
+  return matchTypes.reduce((acc, matchType) => {
+    if (item[matchType] !== undefined && item[matchType].list.length > 0) {
+      const calcP = item[matchType].p * p;
 
       return acc + (
         depth === 4
           ? calcP * calcP
-          : wordScoreCalculate(item[colour], calcP, depth + 1)
+          : wordScoreCalculate(item[matchType], calcP, depth + 1)
       );
     }
 
@@ -77,20 +77,20 @@ function decisionTreeCreate(word, list, hardMode) {
   const duplicateDivisor = hardMode === true ? -10 : 10;
   const decisionTreeFill = (treeItem, depth = 0, filters = []) => {
     if (depth < 5 && treeItem.list.length > 0) {
-      colours.forEach((colour) => {
+      matchTypes.forEach((matchType) => {
         const letter = word[depth];
-        const filter = `${ letter }${ depth }${ colour }`;
+        const filter = `${ letter }${ depth }${ matchType }`;
         const newFilters = filters.concat(filter);
 
         const matchingWords = listFilter(treeItem.list, newFilters);
 
-        treeItem[colour] = {
+        treeItem[matchType] = {
           list: matchingWords,
           p: (1 + word.split('').filter((l) => l === letter).length / duplicateDivisor)
             * (matchingWords.length / treeItem.list.length),
         };
 
-        decisionTreeFill(treeItem[colour], depth + 1, newFilters);
+        decisionTreeFill(treeItem[matchType], depth + 1, newFilters);
       });
     }
   };
@@ -319,6 +319,7 @@ function wordleChecker(target) {
 }
 
 export {
+  matchTypes,
   wordleSolver,
   wordleChecker,
 };
