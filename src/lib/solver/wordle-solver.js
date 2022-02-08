@@ -4,7 +4,6 @@
 
 import treeEasy from './tree-easy.js';
 import treeHard from './tree-hard.js';
-import targetWordsList from './words.js';
 
 const fullWordsList = [...new Set(treeEasy.map((o) => o[1]))].sort();
 const guessWordRe = /^[a-z]{5}$/i;
@@ -336,6 +335,4 @@ export {
   getPlayWordIndex,
   wordleSolver,
   wordleChecker,
-  targetWordsList,
-  fullWordsList,
 };
