@@ -704,7 +704,7 @@ export default defineComponent({
     },
 
     onKeyUp(evt) {
-      if (!evt || typeof evt.key !== 'string' || evt.key.length === 0) {
+      if (!evt || typeof evt.key !== 'string' || evt.key.length === 0 || evt.altKey === true || evt.ctrlKey === true || evt.metaKey === true) {
         return;
       }
 
@@ -712,9 +712,11 @@ export default defineComponent({
 
       if (/^[a-z]$/.test(key) === true) {
         this.onVKeyPress(key);
+        document.activeElement.blur();
       } else if (['backspace', 'delete', 'arrowleft'].indexOf(key) > -1) {
         this.onVKeyPress('BS');
-      } else if (key === 'enter') {
+        document.activeElement.blur();
+      } else if (key === 'enter' && document.activeElement === document.body) {
         this.onVKeyPress('ENTER');
       } else if (key === '?') {
         this.onShowHelp();

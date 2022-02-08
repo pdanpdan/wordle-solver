@@ -1,6 +1,7 @@
 // source and credits: https://www.poirrier.ca/notes/wordle/
 import treeEasy from './tree-easy.js';
 import treeHard from './tree-hard.js';
+import targetWordsList from './words.js';
 
 const fullWordsList = [...new Set(treeEasy.map((o) => o[1]))].sort();
 const guessWordRe = /^[a-z]{5}$/i;
@@ -54,19 +55,22 @@ function listFilter(list, filters) {
 }
 
 function wordScoreCalculate(item, p = 1, depth = 0) {
-  return matchTypes.reduce((acc, matchType) => {
-    if (item[matchType] !== undefined && item[matchType].list.length > 0) {
-      const calcP = item[matchType].p * p;
+  let sum = 0;
 
-      return acc + (
-        depth === 4
-          ? calcP * calcP
-          : wordScoreCalculate(item[matchType], calcP, depth + 1)
-      );
+  for (let m = 0; m < 3; m += 1) {
+    const matchType = matchTypes[m];
+    const newItem = item[matchType];
+
+    if (newItem !== undefined && newItem.list.length > 0) {
+      const calcP = newItem.p * p;
+
+      sum += depth === 4
+        ? calcP * calcP
+        : wordScoreCalculate(newItem, calcP, depth + 1);
     }
+  }
 
-    return acc;
-  }, 0);
+  return sum;
 }
 
 function decisionTreeCreate(word, list, hardMode) {
@@ -122,32 +126,30 @@ function decisionTreeGuess(filters, hardMode) {
     ? filteredWordsList
     : fullWordsList;
   let minScore = 999999;
-  const scores = { [minScore]: filteredWordsListLength === 1 ? filteredWordsList : [] };
+  let words = filteredWordsListLength === 1 ? filteredWordsList : [];
 
   if (filteredWordsListLength > 1) {
     for (let i = usedWordsList.length - 1; i >= 0; i -= 1) {
-      const wordTree = decisionTreeCreate(usedWordsList[i], filteredWordsList, hardMode);
+      const word = usedWordsList[i];
+      const wordTree = decisionTreeCreate(word, filteredWordsList, hardMode);
       const score = wordScoreCalculate(wordTree);
       if (score < minScore) {
         minScore = score;
-        scores[score] = [usedWordsList[i]];
+        words = [word];
       } else if (score === minScore) {
-        scores[score].push(usedWordsList[i]);
+        words.push(word);
       }
     }
   }
 
   const filteredLetters = filters.map((f) => f[0]);
-  scores[minScore] = scores[minScore] || [];
-  scores[minScore].sort(
+  cache[cacheKey] = words.sort(
     (a, b) => (
-      a.split('').reduce((acc, l) => acc + filteredLetters.filter((fl) => fl === l).length)
-      - b.split('').reduce((acc, l) => acc + filteredLetters.filter((fl) => fl === l).length)
+      a.split('').reduce((acc, l) => acc + filteredLetters.filter((fl) => fl === l).length, 0)
+      - b.split('').reduce((acc, l) => acc + filteredLetters.filter((fl) => fl === l).length, 0)
     ),
     0,
   );
-
-  cache[cacheKey] = scores[minScore];
 
   return cache[cacheKey];
 }
@@ -180,6 +182,7 @@ function wordleSolver(hardMode) {
   let guesses = [{
     node: 0,
     word: solveTree[0][1],
+    words: [solveTree[0][1]],
     result: Array(5).fill('b').join(''),
   }];
 
@@ -219,7 +222,7 @@ function wordleSolver(hardMode) {
             words,
             list: listFilter(fullWordsList, filters),
           });
-        }, 0);
+        }, 10);
       });
     }
 
@@ -234,18 +237,19 @@ function wordleSolver(hardMode) {
       nextNode = solveTree[nextNode][3];
     }
 
+    const list = listFilter(fullWordsList, guessesToFilters(guesses));
+
     if (nextNode === 0) {
       return Promise.resolve({
         words: [],
-        list: listFilter(fullWordsList, guessesToFilters(guesses)),
+        list,
       });
     }
-
-    const list = listFilter(fullWordsList, guessesToFilters(guesses));
 
     guesses.push({
       node: nextNode,
       word: solveTree[nextNode][1],
+      words: [solveTree[nextNode][1]],
       result: Array(5).fill('b').join(''),
     });
 
@@ -268,7 +272,6 @@ function wordleSolver(hardMode) {
   solver.getGuesses = () => guesses;
   solver.getCurrentSolution = () => {
     const guessIndex = guesses.length - 1;
-    const guess = guesses[guessIndex];
 
     if (guessIndex < 0) {
       return {
@@ -278,7 +281,7 @@ function wordleSolver(hardMode) {
     }
 
     return {
-      words: [guess.word],
+      words: guesses[guessIndex].words,
       list: listFilter(fullWordsList, guessesToFilters(guesses.slice(0, guessIndex))),
     };
   };
@@ -340,4 +343,6 @@ export {
   getPlayWordIndex,
   wordleSolver,
   wordleChecker,
+  targetWordsList,
+  fullWordsList,
 };
