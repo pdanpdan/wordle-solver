@@ -1,6 +1,6 @@
 {
   "name": "wordle-solver",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Wordle Solver Helper",
   "productName": "Wordle Solver",
   "author": "Dan Popescu <pdan.popescu@gmail.com>",
@@ -10,21 +10,21 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/extras": "^1.12.4",
+    "@quasar/extras": "^1.12.5",
     "core-js": "^3.21.0",
-    "quasar": "^2.5.1",
-    "vue": "^3.2.29",
+    "quasar": "^2.5.4",
+    "vue": "^3.2.30",
     "vue-i18n": "^9.2.0-beta.30",
     "vue-router": "^4.0.12",
     "vuex": "^4.0.2"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.16.5",
+    "@babel/eslint-parser": "^7.17.0",
     "@quasar/app": "^3.3.2",
     "eslint": "^8.8.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4",
-    "eslint-plugin-vue": "^8.4.0",
+    "eslint-plugin-vue": "^8.4.1",
     "eslint-webpack-plugin": "^3.1.1",
     "workbox-webpack-plugin": "^6.4.2"
   },

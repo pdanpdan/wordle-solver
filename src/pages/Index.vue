@@ -53,6 +53,7 @@
         <q-btn
           v-for="i in 5"
           :key="i"
+          :class="{ 'w-letter--active': targetMode === true && guessTargetLength === i - 1 }"
           outline
           size="28px"
           padding="2px"
@@ -118,6 +119,7 @@
               <q-btn
                 v-for="i in 5"
                 :key="i"
+                :class="{ 'w-letter--active': guessLettersLength === i - 1 }"
                 unelevated
                 size="28px"
                 padding="2px"
@@ -202,7 +204,7 @@
         />
       </div>
 
-      <w-keyboard :can-submit="canSubmit" @click="onKeyPress"/>
+      <w-keyboard :can-submit="canSubmit" @click="onVKeyPress"/>
     </div>
   </div>
 </template>
@@ -701,7 +703,25 @@ export default defineComponent({
         });
     },
 
-    onKeyPress(key) {
+    onKeyUp(evt) {
+      if (!evt || typeof evt.key !== 'string' || evt.key.length === 0) {
+        return;
+      }
+
+      const key = evt.key.toLowerCase();
+
+      if (/^[a-z]$/.test(key) === true) {
+        this.onVKeyPress(key);
+      } else if (['backspace', 'delete', 'arrowleft'].indexOf(key) > -1) {
+        this.onVKeyPress('BS');
+      } else if (key === 'enter') {
+        this.onVKeyPress('ENTER');
+      } else if (key === '?') {
+        this.onShowHelp();
+      }
+    },
+
+    onVKeyPress(key) {
       if (key === 'BS') {
         if (this.targetMode === true) {
           if (this.guessTargetLength > 0) {
@@ -821,6 +841,12 @@ export default defineComponent({
         this.playMode = true;
       }
     }
+
+    window.addEventListener('keyup', this.onKeyUp);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('keyup', this.onKeyUp);
   },
 });
 </script>

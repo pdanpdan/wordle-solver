@@ -45,6 +45,7 @@
 
       <q-card-actions style="background-color: rgba(0, 0, 0, .2)" align="right">
         <q-btn
+          autofocus
           flat
           no-caps
           color="primary"
