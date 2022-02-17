@@ -61,13 +61,13 @@
           :text-color="guessTargetColor"
           disable
         >
-          <div v-if="playMode === true" style="min-width: 1.715em">?</div>
+          <div style="min-width: 1.715em">
+            <template v-if="targetMode === true">{{ target[i - 1] || '&nbsp;' }}</template>
+            <template v-else>{{ guessTargetOptions[i - 1].target || '?' }}</template>
+          </div>
 
-          <div v-else-if="targetMode === true" style="min-width: 1.715em">{{ target[i - 1] || '&nbsp;' }}</div>
-
-          <template v-else>
+          <template v-if="targetMode !== true">
             <div v-for="(letter, j) in guessTargetOptions[i - 1].opts" :key="j" class="w-target__suggestion">{{ letter }}</div>
-            <div style="min-width: 1.715em">{{ guessTargetOptions[i - 1].target || '?' }}</div>
           </template>
         </q-btn>
 
@@ -431,7 +431,7 @@ export default defineComponent({
     },
 
     guessTarget() {
-      return this.targetMode === true
+      return this.targetMode === true || this.playMode === true
         ? this.target.join('')
         : this.guessTargetOptions.map((obj) => obj.target).join('');
     },
@@ -448,7 +448,7 @@ export default defineComponent({
 
     guessTargetOptions() {
       const arr5 = Array(5).fill(null);
-      const options = arr5.map((_, i) => ({ opts: [], target: this.target[i] }));
+      const options = arr5.map((_, i) => ({ opts: [], target: this.playMode === true ? '' : this.target[i] }));
       let free = arr5.map((_, i) => i).filter((i) => options[i].target === '');
 
       if (free.length > 0) {
@@ -684,6 +684,17 @@ export default defineComponent({
         for (let i = 0; i < 5; i += 1) {
           matchTypes[i] = result[i];
         }
+      }
+
+      if (this.playMode === true) {
+        guesses.value.push({
+          letters,
+          matchTypes,
+        });
+
+        this.guess = createGuess();
+
+        return;
       }
 
       this.guessesBackup = guesses.value.slice();
