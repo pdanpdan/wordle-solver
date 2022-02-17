@@ -4,11 +4,15 @@
 
 import treeEasy from './tree-easy.js';
 import treeHard from './tree-hard.js';
+import targetWords from './words.js';
 
-const fullWordsList = [...new Set(treeEasy.map((o) => o[1]))].sort();
+const fullWordsList = [...new Set(treeEasy.map((o) => o[1]))]
+  .sort()
+  .sort((a, b) => (targetWords.indexOf(a) === -1 ? 1 : 0) - (targetWords.indexOf(b) === -1 ? 1 : 0));
 const guessWordRe = /^[a-z]{5}$/i;
 const guessResultRe = /^[gyb]$/i;
 const matchTypes = ['g', 'y', 'b'];
+const fallbackGuessWords = ['crane', 'tares', 'spaer', 'lares'];
 
 const cache = {};
 const cacheList = {};
@@ -104,9 +108,9 @@ function decisionTreeGuess(filters) {
   }
 
   if (filters.findIndex((f) => f[2] !== 'b') === -1) {
-    const filteredWordsList = listFilter(['lares', 'tares', 'spaer', 'crane'], filters);
+    const filteredWordsList = listFilter(fallbackGuessWords, filters);
 
-    return filteredWordsList.length > 0 ? filteredWordsList : ['lares'];
+    return filteredWordsList.length > 0 ? filteredWordsList : fallbackGuessWords;
   }
 
   const filteredWordsList = listFilter(fullWordsList, filters);
@@ -118,10 +122,11 @@ function decisionTreeGuess(filters) {
   }
 
   const filteredWordsListLength = filteredWordsList.length;
-  let minScore = 999999;
   let words = filteredWordsListLength === 1 ? filteredWordsList : [];
 
   if (filteredWordsListLength > 1) {
+    let minScore = Infinity;
+
     for (let i = filteredWordsListLength - 1; i >= 0; i -= 1) {
       const word = filteredWordsList[i];
       const score = wordScoreCalculate(word, filteredWordsList);
@@ -134,14 +139,7 @@ function decisionTreeGuess(filters) {
     }
   }
 
-  const filteredLetters = filters.map((f) => f[0]);
-  cache[cacheKey] = words.sort(
-    (a, b) => (
-      a.split('').reduce((acc, l) => acc + filteredLetters.filter((fl) => fl === l).length, 0)
-      - b.split('').reduce((acc, l) => acc + filteredLetters.filter((fl) => fl === l).length, 0)
-    ),
-    0,
-  );
+  cache[cacheKey] = words.sort((a, b) => (targetWords.indexOf(a) === -1 ? 1 : 0) - (targetWords.indexOf(b) === -1 ? 1 : 0));
 
   return cache[cacheKey];
 }
@@ -174,7 +172,7 @@ function wordleSolver(hardMode) {
   let guesses = [{
     node: 0,
     word: solveTree[0][1],
-    words: [solveTree[0][1], 'lares'],
+    words: [...new Set([solveTree[0][1]].concat(fallbackGuessWords))],
     result: Array(5).fill('b').join(''),
   }];
 
