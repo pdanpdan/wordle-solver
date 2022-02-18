@@ -1,6 +1,10 @@
 <template>
-  <div class="column no-wrap q-gutter-y-md items-center">
-    <div v-for="(row, i) in keyboardLayout" :key="i" class="row no-wrap q-gutter-x-xs">
+  <div class="column no-wrap q-gutter-y-sm items-center">
+    <div
+      v-for="(row, i) in keyboardLayout"
+      :key="i"
+      :class="classes"
+    >
       <w-key
         v-for="char in row"
         :key="char"
@@ -30,6 +34,12 @@ export default defineComponent({
   emits: [
     'click',
   ],
+
+  computed: {
+    classes() {
+      return `row no-wrap ${ this.$q.screen.gt.sm === true ? 'q-gutter-x-sm' : 'q-gutter-x-xs' }`;
+    },
+  },
 
   methods: {
     onClick(char) {

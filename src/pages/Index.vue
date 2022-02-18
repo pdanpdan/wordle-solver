@@ -4,11 +4,11 @@
       <div class="q-py-xs row no-wrap items-center q-gutter-x-md">
         <q-btn
           v-bind="defaultColors"
-          flat
           round
-          dense
-          size="14px"
-          icon="help_center"
+          unelevated
+          size="md"
+          padding="sm"
+          icon="description"
           :aria-label="$t('solver.btn_help')"
           @click="onShowHelp"
         />
@@ -16,8 +16,8 @@
         <q-btn
           v-bind="defaultColors"
           unelevated
-          size="14px"
-          padding="2px 16px"
+          size="md"
+          padding="sm md"
           :aria-label="$t('solver.btn_reset_solver')"
           @click="resetSolver()"
         >
@@ -27,20 +27,21 @@
         <q-btn
           v-bind="defaultColors"
           unelevated
-          size="14px"
-          padding="2px 16px"
-          :aria-label="hardMode === true ? $t('solver.btn_to_easy_mode') : $t('solver.btn_to_hard_mode')"
-          @click="hardMode = hardMode !== true"
+          size="md"
+          padding="sm md"
+          :aria-label="solverModeTooltip"
+          @click="onChangeSolverMode"
         >
-          <div style="min-width: 6em">{{ hardMode === true ? 'Hard mode' : 'Easy mode' }}</div>
+          <div style="min-width: 6em">{{ solverModeLabel }}</div>
+          <q-tooltip class="q-py-sm q-px-md bg-grey-4 text-dark text-subtitle2">{{ solverModeTooltip }}</q-tooltip>
         </q-btn>
 
         <q-btn
           v-bind="defaultColors"
-          flat
           round
-          dense
-          size="14px"
+          unelevated
+          size="md"
+          padding="sm"
           :icon="darkMode === true ? 'dark_mode' : 'light_mode'"
           :aria-label="darkMode === true ? $t('solver.btn_to_light_mode') : $t('solver.btn_to_dark_mode')"
           @click="darkMode = darkMode !== true"
@@ -51,7 +52,7 @@
 
       <div class="q-my-sm row no-wrap items-center q-gutter-x-sm">
         <q-btn
-          v-for="i in 5"
+          v-for="i in WORD_SIZE"
           :key="i"
           :class="{ 'w-letter--active': targetMode === true && guessTargetLength === i - 1 }"
           outline
@@ -73,12 +74,13 @@
 
         <q-btn
           class="q-ml-md"
-          flat
           round
-          dense
-          size="14px"
+          unelevated
+          size="md"
+          padding="sm"
           :icon="targetMode === true ? 'send' : (playMode === true ? 'visibility' : 'edit')"
-          :color="targetMode === true && canSubmit === true ? 'primary' : undefined"
+          :color="targetMode === true && canSubmit === true ? 'primary' : defaultColors.color"
+          :text-color="targetMode === true && canSubmit === true ? undefined: defaultColors.textColor"
           :aria-label="targetMode === true ? $t('solver.btn_save_target') : $t('solver.btn_edit_target')"
           :disable="targetMode === true && canSubmit !== true"
           @click="onChangeTarget()"
@@ -103,94 +105,96 @@
         </q-input>
       </template>
 
-      <template v-if="targetMode !== true">
-        <q-separator class="full-width"/>
+      <q-separator v-show="targetMode !== true" class="full-width"/>
 
-        <q-scroll-area class="col full-width">
-          <div class="column no-wrap items-center">
-            <w-guess-history-item
-              v-for="(guess, j) in guessesVisible"
-              :key="j"
-              :guess="guess"
-              @undo="undoSolver(j)"
+      <q-scroll-area v-show="targetMode !== true" class="col full-width">
+        <div class="column no-wrap items-center">
+          <w-guess-history-item
+            v-for="(guess, j) in guessesVisible"
+            :key="j"
+            :guess="guess"
+            @undo="undoSolver(j)"
+          />
+
+          <div v-if="guessSolved !== true && solutionListLength > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
+            <q-btn
+              v-for="i in WORD_SIZE"
+              :key="i"
+              ref="btnGuessLetter"
+              :class="{ 'w-letter--active': guessLettersLength === i - 1 }"
+              unelevated
+              size="28px"
+              padding="2px"
+              v-bind="guessMatchColors[i - 1]"
+              :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
+              :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
+              @click="onToggleColor(i - 1)"
+            >
+              <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
+
+              <q-badge
+                v-if="guessColorsConflicts[i - 1]"
+                color="negative"
+                rounded
+                floating
+              />
+            </q-btn>
+
+            <q-btn
+              class="q-ml-md"
+              round
+              unelevated
+              size="md"
+              padding="sm"
+              icon="send"
+              color="primary"
+              :disable="guessLettersValid !== true || guessColorsValid !== true"
+              :aria-label="$t('solver.btn_add_guess')"
+              @click="addGuess"
             />
+          </div>
 
-            <div v-if="guessSolved !== true && solutionListLength > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
-              <q-btn
-                v-for="i in 5"
+          <q-separator class="full-width" spaced/>
+
+          <div class="row text-subtitle2 text-center">
+            {{ $t('solver.guesses', [guessesLength]) }}
+            <template v-if="playMode !== true && solutionWordsLength > 0">
+              <q-separator vertical spaced/>
+              {{ $t('solver.suggested_words', [solutionWordsLength]) }}
+            </template>
+          </div>
+
+          <div v-if="playMode !== true && solutionWordsLength > 0" class="q-pa-sm">
+            <div class="row items-center justify-center q-gutter-md">
+              <w-solution-word
+                v-for="(props, i) in solutionWordsProps"
                 :key="i"
-                :class="{ 'w-letter--active': guessLettersLength === i - 1 }"
-                unelevated
-                size="28px"
-                padding="2px"
-                v-bind="guessMatchColors[i - 1]"
-                :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
-                :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
-                @click="onToggleColor(i - 1)"
-              >
-                <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
-                <q-badge
-                  v-if="guessColorsConflicts[i - 1]"
-                  color="negative"
-                  rounded
-                  floating
-                />
-              </q-btn>
-
-              <q-btn
-                class="q-ml-md"
-                flat
-                round
-                dense
-                size="14px"
-                icon="send"
-                color="primary"
-                :disable="guessLettersValid !== true || guessColorsValid !== true"
-                :aria-label="$t('solver.btn_add_guess')"
-                @click="addGuess"
+                v-bind="props"
+                @click="onSelectNextGuess"
               />
             </div>
+          </div>
 
-            <q-separator class="full-width" spaced/>
-
-            <div class="row text-subtitle2 text-center">
-              {{ $t('solver.guesses', [guessesLength]) }}
-              <template v-if="playMode !== true && solutionWordsLength > 0">
-                <q-separator vertical spaced/>
-                {{ $t('solver.suggested_words', [solutionWordsLength]) }}
-              </template>
+          <template v-if="playMode !== true">
+            <div class="text-subtitle2 text-center">
+              {{ $t('solver.matching_words', [solutionListLength]) }}
             </div>
-            <div v-if="playMode !== true && solutionWordsLength > 0" class="q-pa-sm">
-              <div class="row items-center justify-center q-gutter-md">
+            <div v-if="solutionListLength > 0" class="q-pa-sm">
+              <div class="row items-center justify-center q-gutter-sm">
                 <w-solution-word
-                  v-for="(props, i) in solutionWordsProps"
+                  v-for="(props, i) in solutionListProps"
                   :key="i"
                   v-bind="props"
+                  :disable="guessSolved === true || props.disable === true"
                   @click="onSelectNextGuess"
                 />
               </div>
             </div>
+          </template>
+        </div>
+      </q-scroll-area>
 
-            <template v-if="playMode !== true">
-              <div class="text-subtitle2 text-center">
-                {{ $t('solver.matching_words', [solutionListLength]) }}
-              </div>
-              <div v-if="solutionListLength > 0" class="q-pa-sm">
-                <div class="row items-center justify-center q-gutter-sm">
-                  <w-solution-word
-                    v-for="(props, i) in solutionListProps"
-                    :key="i"
-                    v-bind="props"
-                    @click="onSelectNextGuess"
-                  />
-                </div>
-              </div>
-            </template>
-          </div>
-        </q-scroll-area>
-      </template>
-
-      <q-space v-else/>
+      <q-space v-if="targetMode === true"/>
 
       <div class="full-width relative-position">
         <q-separator spaced/>
@@ -219,66 +223,33 @@ import WGuessHistoryItem from 'components/GuessHistoryItem.vue';
 import WSolutionWord from 'components/SolutionWord.vue';
 
 import {
+  WORD_SIZE,
+
+  wordsInTargets,
+
   getMatchColor,
   getPlayWord,
-  getPlayWordIndex,
+  getPlayWordGameId,
+
   wordleChecker,
   wordleSolver,
 } from 'lib/solver/wordle-solver.js';
+
 import {
   darkMode,
-  hardMode,
+  solverMode,
   targetMode,
   playMode,
 
   defaultColors,
 
+  createGuess,
+  createSolution,
+  createTarget,
+
   guesses,
   charsMatchType,
 } from 'lib/store';
-
-const letterRe = /^[a-z]$/i;
-
-function createGuess() {
-  return {
-    letters: Array(5).fill(''),
-    matchTypes: Array(5).fill('x'),
-    processing: false,
-  };
-}
-
-function createSolution(solution) {
-  const sol = {
-    words: [],
-    list: [],
-  };
-
-  if (solution === Object(solution)) {
-    if (Array.isArray(solution.words) === true) {
-      sol.words = solution.words;
-    } else if (typeof solution.word === 'string') {
-      sol.words = [solution.word];
-    }
-
-    if (Array.isArray(solution.list) === true) {
-      sol.list = solution.list;
-    }
-  }
-
-  return sol;
-}
-
-function createTarget(word) {
-  const target = Array(5).fill('');
-
-  if (typeof word === 'string') {
-    for (let i = 0; i < 5; i += 1) {
-      target[i] = letterRe.test(word[i]) === true ? word[i].toLowerCase() : '';
-    }
-  }
-
-  return target;
-}
 
 export default defineComponent({
   name: 'PageIndex',
@@ -291,8 +262,10 @@ export default defineComponent({
 
   data() {
     return {
+      WORD_SIZE,
+
       darkMode,
-      hardMode,
+      solverMode,
 
       targetMode,
       target: createTarget(),
@@ -303,14 +276,38 @@ export default defineComponent({
       solution: createSolution(),
 
       defaultColors,
+
+      guessesVisible: [],
+
+      solver: null,
+      checker: null,
     };
   },
 
   computed: {
-    guessesVisible() {
-      return this.guess.processing === true
-        ? this.guessesBackup
-        : guesses.value;
+    solverModeLabel() {
+      if (this.solverMode[0] === 'h') {
+        return this.solverMode[1] === 'f'
+          ? this.$t('solver.btn_hard_full_mode')
+          : this.$t('solver.btn_hard_std_mode');
+      }
+
+      return this.solverMode[1] === 'f'
+        ? this.$t('solver.btn_easy_full_mode')
+        : this.$t('solver.btn_easy_std_mode');
+    },
+
+    solverModeTooltip() {
+      // hf -> es -> ef -> hs
+      if (this.solverMode[0] === 'h') {
+        return this.solverMode[1] === 'f'
+          ? this.$t('solver.btn_to_easy_std_mode_tooltip')
+          : this.$t('solver.btn_to_hard_full_mode_tooltip');
+      }
+
+      return this.solverMode[1] === 'f'
+        ? this.$t('solver.btn_to_hard_std_mode_tooltip')
+        : this.$t('solver.btn_to_easy_full_mode_tooltip');
     },
 
     guessesLength() {
@@ -325,30 +322,37 @@ export default defineComponent({
       return this.guessLetters.length;
     },
 
+    guessLettersFilled() {
+      return this.guessLettersLength === WORD_SIZE
+        ? this.guessLetters
+        : '';
+    },
+
     guessLettersValid() {
-      return this.guessLettersLength > 4
-        && this.solver !== undefined
-        && this.solver.isValidWord(this.guessLetters);
+      return this.guessLettersFilled !== ''
+        && this.solver !== null
+        && this.solver.isValidGuessWord(this.guessLettersFilled);
     },
 
     guessColorsConflicts() {
-      const conflicts = Array(5).fill(false);
+      const conflicts = Array(WORD_SIZE).fill(false);
       const { letters, matchTypes } = this.guess;
+      const iMax = this.guessLettersLength;
 
-      for (let i = 0; i < 5; i += 1) {
+      for (let i = 0; i < iMax; i += 1) {
         const letter = letters[i];
         const letterMatchType = matchTypes[i];
-        const charMatchType = charsMatchType.value[letter];
+        const charMatchType = charsMatchType.value[letter].match;
 
-        if (letter !== '') {
-          if (this.hardMode === true) {
-            guesses.value.forEach((guess) => {
-              if (guess.letters[i] !== letter && guess.matchTypes[i] === 'g') {
-                conflicts[i] = true;
-              }
-            });
-          }
+        if (this.solverMode[0] === 'h') {
+          guesses.value.forEach((guess) => {
+            if (conflicts[i] !== true && guess.letters[i] !== letter && guess.matchTypes[i] === 'g') {
+              conflicts[i] = true;
+            }
+          });
+        }
 
+        if (conflicts[i] !== true) {
           if (letterMatchType === 'g') {
             if (
               charMatchType === 'b'
@@ -379,7 +383,7 @@ export default defineComponent({
       const countY = matchTypes.filter((matchType) => matchType === 'y').length;
       const countG = matchTypes.filter((matchType) => matchType === 'g').length;
 
-      if (countY === 1 && countG === 4) {
+      if (countY === 1 && countG === WORD_SIZE - 1) {
         conflicts[matchTypes.indexOf('y')] = true;
       }
 
@@ -387,35 +391,31 @@ export default defineComponent({
     },
 
     guessColorsValid() {
-      let valid = this.guessColorsConflicts.indexOf(true) === -1;
-
-      if (this.hardMode === true && valid === true) {
-        const aggLetters = {};
-        for (let i = 0; i < 5; i += 1) {
-          if (aggLetters[this.guess.letters[i]] === undefined) {
-            aggLetters[this.guess.letters[i]] = 0;
-          }
-
-          aggLetters[this.guess.letters[i]] += 1;
-        }
-
-        guesses.value.forEach(({ letters, matchTypes }) => {
-          if (valid === true) {
-            const aggLettersCopy = { ...aggLetters };
-            for (let i = 0; valid === true && i < 5; i += 1) {
-              if (matchTypes[i] === 'g' || matchTypes[i] === 'y') {
-                if (aggLettersCopy[letters[i]] > 0) {
-                  aggLettersCopy[letters[i]] -= 1;
-                } else {
-                  valid = false;
-                }
-              }
-            }
-          }
-        });
+      if (this.guessLettersValid !== true) {
+        return false;
       }
 
-      return valid;
+      const valid = this.guessColorsConflicts.indexOf(true) === -1;
+
+      if (this.solverMode[0] === 'e' || valid !== true) {
+        return valid;
+      }
+
+      const usedLetters = JSON.parse(JSON.stringify(charsMatchType.value));
+      const { letters } = this.guess;
+
+      for (let i = 0; i < WORD_SIZE; i += 1) {
+        const { guess } = this.guessTargetOptions[i];
+        const letter = letters[i];
+
+        if (guess !== '' && guess !== letter) {
+          return false;
+        }
+
+        usedLetters[letter].count -= 1;
+      }
+
+      return Object.keys(usedLetters).findIndex((letter) => usedLetters[letter].count > 0) === -1;
     },
 
     guessMatchColors() {
@@ -440,72 +440,79 @@ export default defineComponent({
       return this.guessTarget.length;
     },
 
+    guessTargetFilled() {
+      return this.guessTargetLength === WORD_SIZE
+        ? this.guessTarget
+        : '';
+    },
+
     guessTargetValid() {
-      return this.guessTargetLength === 5
-        && this.solver !== undefined
-        && this.solver.isValidWord(this.guessTarget);
+      return this.guessTargetLength === WORD_SIZE
+        && this.solver !== null
+        && this.solver.isValidTargetWord(this.guessTargetFilled);
     },
 
     guessTargetOptions() {
-      const arr5 = Array(5).fill(null);
-      const options = arr5.map((_, i) => ({ opts: [], target: this.playMode === true ? '' : this.target[i] }));
-      let free = arr5.map((_, i) => i).filter((i) => options[i].target === '');
+      const arrBase = Array(WORD_SIZE).fill(null);
+      const usedLetters = JSON.parse(JSON.stringify(charsMatchType.value));
+      const options = arrBase.map(() => ({ opts: [], target: '', guess: '' }));
+      let free = arrBase.map((_, i) => i);
 
-      if (free.length > 0) {
-        guesses.value.forEach(({ letters, matchTypes }) => {
-          free.forEach((i) => {
-            if (matchTypes[i] === 'g') {
-              options[i].target = letters[i];
-            }
-          });
+      if (this.playMode !== true) {
+        this.target.forEach((letter, i) => {
+          if (letter !== '') {
+            options[i].target = letter;
+            usedLetters[letter].count -= 1;
+          }
         });
       }
+
+      guesses.value.forEach(({ letters, matchTypes }) => {
+        free.forEach((i) => {
+          if (options[i].guess === '' && matchTypes[i] === 'g') {
+            options[i].target = letters[i];
+            options[i].guess = letters[i];
+            usedLetters[letters[i]].count -= 1;
+          }
+        });
+      });
 
       free = free.filter((i) => options[i].target === '');
 
-      if (free.length > 0) {
-        guesses.value.forEach(({ letters, matchTypes }) => {
-          for (let i = 0; i < 5; i += 1) {
-            if (charsMatchType.value[letters[i]] !== 'g' && matchTypes[i] === 'y') {
-              free.forEach((j) => {
-                if (j !== i && options[j].opts.indexOf(letters[i]) === -1) {
-                  options[j].opts.push(letters[i]);
-                }
-              });
-            }
-          }
-        });
-
-        guesses.value.forEach(({ letters, matchTypes }) => {
-          for (let i = 0; i < 5; i += 1) {
-            if (matchTypes[i] !== 'g' && options[i].opts.indexOf(letters[i]) > -1) {
-              options[i].opts = options[i].opts.filter((l) => l !== letters[i]);
-            }
-          }
-        });
-
-        const aggLetters = {};
-        for (let i = 0; i < 5; i += 1) {
-          const { opts } = options[i];
-          opts.forEach((letter) => {
-            if (aggLetters[letter] === undefined) {
-              aggLetters[letter] = 0;
-            }
-
-            aggLetters[letter] += 1;
-          });
-        }
-
-        Object.keys(aggLetters).forEach((letter) => {
-          if (aggLetters[letter] === 1) {
-            const index = options.findIndex(({ opts }) => opts.indexOf(letter) > -1);
-
-            if (index > -1) {
-              options[index].target = letter;
-            }
-          }
-        });
+      if (free.length === 0) {
+        return options;
       }
+
+      const opts = Object.keys(usedLetters).filter((letter) => usedLetters[letter].count > 0);
+      free.forEach((i) => {
+        options[i].opts = opts.slice();
+      });
+
+      free.forEach((i) => {
+        guesses.value.forEach(({ letters, matchTypes }) => {
+          if (matchTypes[i] !== 'g') {
+            options[i].opts = options[i].opts.filter((letter) => letter !== letters[i]);
+          }
+        });
+      });
+
+      opts.forEach((letter) => {
+        let count = 0;
+        let pos = -1;
+
+        free.forEach((i) => {
+          if (options[i].opts.indexOf(letter) > -1) {
+            count += 1;
+            pos = i;
+          }
+        });
+
+        if (count === 1) {
+          options[pos].target = letter;
+          options[pos].guess = letter;
+          options[pos].opts = [];
+        }
+      });
 
       return options;
     },
@@ -515,7 +522,7 @@ export default defineComponent({
         return 'positive';
       }
 
-      if (this.guessTargetLength > 0 && (this.targetMode !== true || this.guessTargetLength > 4)) {
+      if (this.guessTargetLength > 0 && (this.targetMode !== true || this.guessTargetLength === WORD_SIZE)) {
         return 'negative';
       }
 
@@ -531,13 +538,13 @@ export default defineComponent({
         return false;
       }
 
-      const guess = this.guessesVisible[guessesLength - 1];
+      const { letters, matchTypes } = this.guessesVisible[guessesLength - 1];
 
-      return this.guessTarget === guess.letters.join('') || guess.matchTypes.join('') === 'ggggg';
+      return this.guessTargetFilled === letters.join('') || matchTypes.join('') === 'ggggg';
     },
 
     canSubmit() {
-      return (this.targetMode === true && (this.guessTargetValid === true || this.guessTargetLength < 5))
+      return (this.targetMode === true && (this.guessTargetValid === true || this.guessTargetLength < WORD_SIZE))
         || (this.targetMode !== true && this.guessLettersValid === true && this.guessColorsValid === true);
     },
 
@@ -551,17 +558,17 @@ export default defineComponent({
 
     solutionWordsProps() {
       const disable = this.guessSolved === true || this.solutionListLength === 0;
-      const { guessLetters } = this;
+      const { guessLettersFilled } = this;
 
-      return this.solution.words.map((word) => ({
+      return wordsInTargets(this.solution.words, this.solverMode).map(([word, inTargetWords]) => ({
         word,
-        disable: disable === true || word === guessLetters,
+        mark: inTargetWords,
+        disable: disable === true || word === guessLettersFilled,
       }));
     },
 
     solutionListProps() {
-      const disable = this.guessSolved === true;
-      const { guessLetters } = this;
+      const { guessLettersFilled } = this;
 
       let list;
 
@@ -571,15 +578,18 @@ export default defineComponent({
         list = this.solution.list.slice(0, 29).concat(`... ${ this.solutionListLength - 29 }`);
       }
 
-      return list.map((word) => ({
+      list = wordsInTargets(list, this.solverMode);
+
+      return list.map(([word, inTargetWords]) => ({
         word,
-        disable: disable === true || word === guessLetters || word[0] === '.',
+        mark: inTargetWords,
+        disable: word[0] === '.' || word === guessLettersFilled,
       }));
     },
 
     shareUrl() {
       if (this.guessTargetValid === true) {
-        const gameId = getPlayWordIndex(this.guessTarget);
+        const gameId = getPlayWordGameId(this.guessTargetFilled, this.solverMode);
 
         if (gameId !== null) {
           const { href } = this.$router.resolve({
@@ -591,71 +601,87 @@ export default defineComponent({
         }
       }
 
-      return undefined;
+      return null;
     },
   },
 
   watch: {
-    hardMode() {
+    solverMode() {
       this.$nextTick(() => {
         this.resetSolver(true);
       });
     },
 
-    guessLetters() {
-      if (this.solutionListLength === 1 && this.solution.list[0] === this.guessLetters) {
-        for (let i = 0; i < 5; i += 1) {
+    guessLetters(val) {
+      if (this.checker !== null && val.length === WORD_SIZE) {
+        const result = this.checker(val);
+
+        for (let i = 0; i < WORD_SIZE; i += 1) {
+          this.guess.matchTypes[i] = result[i];
+        }
+
+        return;
+      }
+
+      if (this.solutionListLength === 1 && this.solution.list[0][0] === val) {
+        for (let i = 0; i < WORD_SIZE; i += 1) {
           this.guess.matchTypes[i] = 'g';
         }
 
         return;
       }
 
-      const usedLetters = { ...charsMatchType.value };
+      const usedLetters = JSON.parse(JSON.stringify(charsMatchType.value));
       const iMax = this.guessLettersLength;
 
       for (let i = 0; i < iMax; i += 1) {
         const letter = this.guess.letters[i];
+        this.guess.matchTypes[i] = 'x';
 
-        if (guesses.value.findIndex(({ letters, matchTypes }) => letters[i] === letter && matchTypes[i] === 'g') > -1) {
-          this.guess.matchTypes[i] = 'g';
-          usedLetters[letter] = undefined;
-        } else if (usedLetters[letter] === 'b') {
-          this.guess.matchTypes[i] = 'b';
-          usedLetters[letter] = undefined;
+        if (usedLetters[letter].match !== 'x') {
+          if (usedLetters[letter].count <= 0) {
+            this.guess.matchTypes[i] = 'b';
+          } else if (guesses.value.findIndex(({ letters, matchTypes }) => letters[i] === letter && matchTypes[i] === 'g') > -1) {
+            this.guess.matchTypes[i] = 'g';
+            usedLetters[letter].count -= 1;
+          }
         }
       }
 
       for (let i = 0; i < iMax; i += 1) {
         const letter = this.guess.letters[i];
 
-        if (usedLetters[letter] !== undefined && this.guess.matchTypes[i] !== 'g') {
-          this.guess.matchTypes[i] = 'y';
-          usedLetters[letter] = undefined;
+        if (usedLetters[letter].match !== 'x' && this.guess.matchTypes[i] === 'x') {
+          if (usedLetters[letter].count <= 0) {
+            this.guess.matchTypes[i] = 'b';
+          } else {
+            this.guess.matchTypes[i] = 'y';
+            usedLetters[letter].count -= 1;
+          }
         }
       }
     },
 
-    guessTarget() {
+    guessTargetFilled() {
       this.checker = this.guessTargetValid === true
-        ? wordleChecker(this.guessTarget)
-        : undefined;
+        ? wordleChecker(this.guessTargetFilled)
+        : null;
     },
   },
 
   methods: {
     resetSolver(keepTarget) {
-      this.guessesBackup = guesses.value.slice();
-
       guesses.value = [];
       this.guess = createGuess();
 
       if (keepTarget !== true) {
         this.target = createTarget();
+        this.playMode = false;
       }
 
-      this.solver = wordleSolver(this.hardMode);
+      this.solver = wordleSolver(this.solverMode);
 
+      this.guessesVisible = guesses.value.slice();
       this.solution = createSolution(this.solver.getCurrentSolution());
     },
 
@@ -668,6 +694,7 @@ export default defineComponent({
       guesses.value = guesses.value.slice(0, index);
       this.solver.rewind(index);
 
+      this.guessesVisible = guesses.value.slice();
       this.solution = createSolution(this.solver.getCurrentSolution());
     },
 
@@ -678,10 +705,10 @@ export default defineComponent({
 
       const { letters, matchTypes } = this.guess;
 
-      if (this.checker !== undefined) {
-        const result = this.checker(this.guessLetters);
+      if (this.checker !== null) {
+        const result = this.checker(this.guessLettersFilled);
 
-        for (let i = 0; i < 5; i += 1) {
+        for (let i = 0; i < WORD_SIZE; i += 1) {
           matchTypes[i] = result[i];
         }
       }
@@ -692,16 +719,16 @@ export default defineComponent({
           matchTypes,
         });
 
+        this.guessesVisible = guesses.value.slice();
         this.guess = createGuess();
 
         return;
       }
 
-      this.guessesBackup = guesses.value.slice();
       this.guess.processing = true;
 
       this.solver
-        .solve(matchTypes.join(''), this.guessLetters)
+        .solve(matchTypes.join(''), this.guessLettersFilled)
         .then((solution) => {
           this.solution = createSolution(solution);
 
@@ -710,6 +737,7 @@ export default defineComponent({
             matchTypes,
           });
 
+          this.guessesVisible = guesses.value.slice();
           this.guess = createGuess();
         });
     },
@@ -735,14 +763,23 @@ export default defineComponent({
     },
 
     onVKeyPress(key) {
+      const { guessLettersLength, guessTargetLength } = this;
+
       if (key === 'BS') {
         if (this.targetMode === true) {
-          if (this.guessTargetLength > 0) {
-            this.target[this.guessTargetLength - 1] = '';
+          if (guessTargetLength > 0) {
+            this.target[guessTargetLength - 1] = '';
           }
-        } else if (this.guessLettersLength > 0) {
-          this.guess.matchTypes[this.guessLettersLength - 1] = 'x';
-          this.guess.letters[this.guessLettersLength - 1] = '';
+        } else if (guessLettersLength > 0) {
+          this.guess.matchTypes[guessLettersLength - 1] = 'x';
+          this.guess.letters[guessLettersLength - 1] = '';
+
+          const ref = (this.$refs.btnGuessLetter || [])[guessLettersLength - 2];
+          this.$nextTick(() => {
+            if (ref) {
+              ref.$el.focus();
+            }
+          });
         }
 
         return;
@@ -759,12 +796,19 @@ export default defineComponent({
       }
 
       if (this.targetMode === true) {
-        if (this.guessTargetLength < 5) {
-          this.target[this.guessTargetLength] = key;
+        if (guessTargetLength < WORD_SIZE) {
+          this.target[guessTargetLength] = key;
         }
-      } else if (this.guessLettersLength < 5) {
-        this.guess.letters[this.guessLettersLength] = key;
-        this.guess.matchTypes[this.guessLettersLength] = 'x';
+      } else if (guessLettersLength < WORD_SIZE) {
+        this.guess.letters[guessLettersLength] = key;
+        this.guess.matchTypes[guessLettersLength] = 'x';
+
+        const ref = (this.$refs.btnGuessLetter || [])[guessLettersLength];
+        this.$nextTick(() => {
+          if (ref) {
+            ref.$el.focus();
+          }
+        });
       }
     },
 
@@ -782,8 +826,8 @@ export default defineComponent({
     },
 
     onSelectNextGuess(word) {
-      this.guess.letters = word.slice(0, 5).split('');
-      this.guess.matchTypes = Array(5).fill('x');
+      this.guess.letters = word.slice(0, WORD_SIZE).split('');
+      this.guess.matchTypes = Array(WORD_SIZE).fill('x');
 
       this.$nextTick(() => {
         if (this.guessTargetValid === true) {
@@ -803,6 +847,19 @@ export default defineComponent({
       } else {
         this.guessTargetPrev = guessTarget;
         this.playMode = false;
+      }
+    },
+
+    onChangeSolverMode() {
+      // hf -> es -> ef -> hs
+      if (this.solverMode === 'es') {
+        this.solverMode = 'ef';
+      } else if (this.solverMode === 'ef') {
+        this.solverMode = 'hs';
+      } else if (this.solverMode === 'hs') {
+        this.solverMode = 'hf';
+      } else {
+        this.solverMode = 'es';
       }
     },
 
@@ -846,10 +903,13 @@ export default defineComponent({
   },
 
   mounted() {
-    if (this.$route.params.gameId > 0) {
-      const word = getPlayWord(this.$route.params.gameId);
+    const { gameId } = this.$route.params;
+
+    if (typeof gameId === 'string' && gameId.length > 2) {
+      const word = getPlayWord(gameId);
 
       if (word !== null) {
+        this.solverMode = gameId.slice(0, 2);
         this.target = createTarget(word);
         this.playMode = true;
       }

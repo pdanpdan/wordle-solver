@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialog" @hide="onDialogHide">
-    <q-card class="q-dialog-plugin column no-wrap">
+    <q-card class="column no-wrap" style="width: 600px">
       <q-card-section style="background-color: rgba(0, 0, 0, .2)">
         <div class="text-h5 text-weight-bold">{{ $t('help.title') }}</div>
       </q-card-section>

@@ -1,7 +1,7 @@
 <template>
   <q-btn
     unelevated
-    padding="7px"
+    padding="6px"
     v-bind="props"
     @click="onClick"
   >
@@ -30,22 +30,26 @@ export default defineComponent({
 
   computed: {
     props() {
-      const matchColor = getMatchColor(charsMatchType.value[this.char]);
       const ariaLabel = this.$t('keyboard.btn_keyboard', [this.char]);
+      const size = this.$q.screen.gt.sm === true ? '24px' : '16px';
 
       if (this.char === 'ENTER' && this.canSubmit === true) {
         return {
           color: 'primary',
           textColor: 'w-mode-dark',
+          size,
           ariaLabel,
         };
       }
+
+      const matchColor = this.char.length === 1 ? getMatchColor(charsMatchType.value[this.char].match) : undefined;
 
       return {
         color: matchColor || defaultColors.value.color,
         textColor: matchColor !== undefined
           ? 'w-mode-dark'
           : defaultColors.value.textColor,
+        size,
         ariaLabel,
         disable: this.char === 'ENTER',
       };

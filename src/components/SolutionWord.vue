@@ -6,6 +6,13 @@
     @click="onClick"
   >
     <div style="min-width: 5em">{{ word }}</div>
+
+    <q-badge
+      v-if="mark"
+      color="positive"
+      rounded
+      floating
+    />
   </q-btn>
 </template>
 
@@ -18,6 +25,7 @@ export default defineComponent({
 
   props: {
     word: String,
+    mark: Boolean,
   },
 
   emits: [

@@ -2,69 +2,118 @@
 // [Ruining the fun: a Wordle auto-solver](https://notfunatparties.substack.com/p/wordle-solver)
 // [Mathematical optimization over Wordle decision trees](https://www.poirrier.ca/notes/wordle)
 
-import treeEasy from './tree-easy.js';
-import treeHard from './tree-hard.js';
-import targetWords from './words.js';
+import treeEasyStd from './tree-easy-std.js';
+import treeEasyFull from './tree-easy-full.js';
+import treeHardStd from './tree-hard-std.js';
+import treeHardFull from './tree-hard-full.js';
 
-const fullWordsList = [...new Set(treeEasy.map((o) => o[1]))]
-  .sort()
-  .sort((a, b) => (targetWords.indexOf(a) === -1 ? 1 : 0) - (targetWords.indexOf(b) === -1 ? 1 : 0));
-const guessWordRe = /^[a-z]{5}$/i;
+const WORD_SIZE = 5;
+
+const stdWordsList = [...new Set(treeEasyStd.map((o) => o[1]))].sort();
+const fullWordsList = [...new Set(treeEasyFull.map((o) => o[1]))].sort()
+  .sort((a, b) => (stdWordsList.indexOf(a) === -1 ? 1 : 0) - (stdWordsList.indexOf(b) === -1 ? 1 : 0));
+
+const guessWordRe = new RegExp(`^[a-z]{${ WORD_SIZE }}$`, 'i');
 const guessResultRe = /^[gyb]$/i;
 const matchTypes = ['g', 'y', 'b'];
-const fallbackGuessWords = ['crane', 'tares', 'spaer', 'lares'];
+const fallbackGuessWords = ['crane', 'tares', 'saber', 'roate', 'raile', 'lares'];
 
 const cache = {};
-const cacheList = {};
+
+function wordsInTargets(list, solverMode) {
+  return list.map((word) => ([word, solverMode[1] === 's' ? true : stdWordsList.indexOf(word) > -1]));
+}
 
 function listFilter(list, filters) {
-  const cacheKey = String(list) + String(filters);
+  const filtersB = [];
+  const filtersR = [];
 
-  if (cacheList[cacheKey] === undefined) {
-    const filtersB = [];
-    const filtersR = [];
+  for (let i = filters.length - 1; i >= 0; i -= 1) {
+    const filter = filters[i];
+    if (filter[2] === 'b') {
+      filtersB.push(filter);
+    } else {
+      filtersR.push(filter);
+    }
+  }
 
-    for (let i = filters.length - 1; i >= 0; i -= 1) {
-      const filter = filters[i];
-      if (filter[2] === 'b') {
-        filtersB.push(filter);
-      } else {
-        filtersR.push(filter);
+  return list.filter((word) => {
+    let wordB = word.split('');
+
+    for (let i = filtersR.length - 1; i >= 0; i -= 1) {
+      const [letter, position, matchType] = filtersR[i];
+
+      if (
+        (matchType === 'g' && word[position] !== letter)
+        || (matchType === 'y' && (
+          word.indexOf(letter) === -1
+          || word[position] === letter
+        ))
+      ) {
+        return false;
+      }
+
+      wordB = wordB.map((l) => (l === letter ? '-' : l));
+    }
+
+    for (let i = filtersB.length - 1; i >= 0; i -= 1) {
+      const [letter, position] = filtersB[i];
+
+      if (word[position] === letter || wordB.indexOf(letter) !== -1) {
+        return false;
       }
     }
 
-    cacheList[cacheKey] = list.filter((word) => {
-      let wordB = word.split('');
+    return true;
+  });
+}
 
-      for (let i = filtersR.length - 1; i >= 0; i -= 1) {
-        const [letter, position, matchType] = filtersR[i];
+function listFilterHard(list, guesses) {
+  const filterG = Array(WORD_SIZE).fill('.');
+  const chars = {};
 
-        if (
-          (matchType === 'g' && word[position] !== letter)
-          || (matchType === 'y' && (
-            word.indexOf(letter) === -1
-            || word[position] === letter
-          ))
-        ) {
-          return false;
-        }
+  guesses.forEach(({ word, result }) => {
+    const localChars = {};
 
-        wordB = wordB.map((l) => (l === letter ? '-' : l));
+    for (let i = 0; i < WORD_SIZE; i += 1) {
+      const match = result[i];
+      const letter = word[i];
+
+      if (match === 'g') {
+        filterG[i] = letter;
       }
 
-      for (let i = filtersB.length - 1; i >= 0; i -= 1) {
-        const [letter, position] = filtersB[i];
+      if (match === 'y' || match === 'g') {
+        if (localChars[letter] === undefined) {
+          localChars[letter] = 0;
 
-        if (word[position] === letter || wordB.indexOf(letter) !== -1) {
-          return false;
+          if (chars[letter] === undefined) {
+            chars[letter] = 0;
+          }
+        }
+
+        localChars[letter] += 1;
+
+        if (localChars[letter] > chars[letter]) {
+          chars[letter] = localChars[letter];
         }
       }
+    }
+  });
 
-      return true;
-    });
-  }
+  const reFilterG = new RegExp(`^${ filterG.join('') }$`);
 
-  return cacheList[cacheKey];
+  return Object.keys(chars).reduce((acc, char) => acc.filter((word) => {
+    let len = chars[char];
+
+    for (let i = 0; i < WORD_SIZE; i += 1) {
+      if (word[i] === char) {
+        len -= 1;
+      }
+    }
+
+    return len <= 0;
+  }), list.filter((word) => reFilterG.test(word)));
 }
 
 function wordScoreCalculate(word, list) {
@@ -83,7 +132,7 @@ function wordScoreCalculate(word, list) {
         if (matchingWordsLength > 0) {
           const calcP = pBase * matchingWordsLength;
 
-          if (depth >= 4) {
+          if (depth >= WORD_SIZE - 1) {
             sum += calcP * calcP;
           } else {
             calculateSum(matchingWords, depth + 1, calcP);
@@ -98,22 +147,21 @@ function wordScoreCalculate(word, list) {
   return sum;
 }
 
-function decisionTreeGuess(filters) {
+function decisionTreeGuess(filters, guesses, solverMode) {
   filters.sort();
 
-  const cacheKey = String(filters);
+  const cacheKey = `${ solverMode }${ filters }`;
 
   if (cache[cacheKey] !== undefined) {
     return cache[cacheKey];
   }
 
   if (filters.findIndex((f) => f[2] !== 'b') === -1) {
-    const filteredWordsList = listFilter(fallbackGuessWords, filters);
-
-    return filteredWordsList.length > 0 ? filteredWordsList : fallbackGuessWords;
+    const usedWords = guesses.map((guess) => guess.word);
+    return fallbackGuessWords.filter((word) => usedWords.indexOf(word) === -1);
   }
 
-  const filteredWordsList = listFilter(fullWordsList, filters);
+  const filteredWordsList = listFilter(solverMode[1] === 's' ? stdWordsList : fullWordsList, filters);
 
   if (filteredWordsList.length === 0) {
     cache[cacheKey] = [];
@@ -125,11 +173,19 @@ function decisionTreeGuess(filters) {
   let words = filteredWordsListLength === 1 ? filteredWordsList : [];
 
   if (filteredWordsListLength > 1) {
+    // eslint-disable-next-line no-nested-ternary
+    const guessWordsList = filteredWordsListLength < 4
+      ? filteredWordsList
+      : (
+        solverMode[0] === 'e'
+          ? fullWordsList
+          : listFilterHard(fullWordsList, guesses)
+      );
     let minScore = Infinity;
 
     for (let i = filteredWordsListLength - 1; i >= 0; i -= 1) {
       const word = filteredWordsList[i];
-      const score = wordScoreCalculate(word, filteredWordsList);
+      const score = wordScoreCalculate(word, guessWordsList);
       if (score < minScore) {
         minScore = score;
         words = [word];
@@ -139,7 +195,7 @@ function decisionTreeGuess(filters) {
     }
   }
 
-  cache[cacheKey] = words.sort((a, b) => (targetWords.indexOf(a) === -1 ? 1 : 0) - (targetWords.indexOf(b) === -1 ? 1 : 0));
+  cache[cacheKey] = words.sort((a, b) => (stdWordsList.indexOf(a) === -1 ? 1 : 0) - (stdWordsList.indexOf(b) === -1 ? 1 : 0));
 
   return cache[cacheKey];
 }
@@ -148,7 +204,7 @@ function guessesToFilters(guesses) {
   const filters = new Set();
 
   guesses.forEach(({ word, result }) => {
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < WORD_SIZE; i += 1) {
       filters.add(`${ word[i] }${ i }${ result[i] }`);
     }
   });
@@ -158,22 +214,26 @@ function guessesToFilters(guesses) {
 
 function normalizeResult(guessResult) {
   const result = [];
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < WORD_SIZE; i += 1) {
     result[i] = guessResultRe.test(guessResult[i]) === true ? guessResult[i] : 'b';
   }
 
   return result.join('').toLowerCase();
 }
 
-function wordleSolver(hardMode) {
+function wordleSolver(solverMode) {
   // 0 - a, 1 - g, 2 - c, 3 - s
-  const solveTree = hardMode === true ? treeHard : treeEasy;
+  // eslint-disable-next-line no-nested-ternary
+  const solveTree = solverMode[0] === 'e'
+    ? (solverMode[1] === 's' ? treeEasyStd : treeEasyFull)
+    : (solverMode[1] === 's' ? treeHardStd : treeHardFull);
+  const solverWordsList = solverMode[1] === 's' ? stdWordsList : fullWordsList;
 
   let guesses = [{
     node: 0,
     word: solveTree[0][1],
     words: [...new Set([solveTree[0][1]].concat(fallbackGuessWords))],
-    result: Array(5).fill('b').join(''),
+    result: Array(WORD_SIZE).fill('b').join(''),
   }];
 
   const solver = (guessResult, guessWord) => {
@@ -181,7 +241,11 @@ function wordleSolver(hardMode) {
     const curGuess = guesses[indGuess];
 
     const word = guessWordRe.test(guessWord) === true ? guessWord.toLowerCase() : curGuess.word;
-    if (word !== curGuess.word) {
+
+    if (indGuess === 0 && word === solveTree[0][1]) {
+      curGuess.node = 0;
+      curGuess.word = word;
+    } else if (word !== curGuess.word) {
       curGuess.node = -1;
       curGuess.word = word;
     }
@@ -199,18 +263,18 @@ function wordleSolver(hardMode) {
       return new Promise((resolve) => {
         setTimeout(() => {
           const filters = guessesToFilters(guesses);
-          const words = decisionTreeGuess(filters);
+          const words = decisionTreeGuess(filters, guesses, solverMode);
 
           guesses.push({
             node: -1,
             word: '',
             words,
-            result: Array(5).fill('b').join(''),
+            result: Array(WORD_SIZE).fill('b').join(''),
           });
 
           resolve({
             words,
-            list: listFilter(fullWordsList, filters),
+            list: listFilter(solverWordsList, filters),
           });
         }, 50);
       });
@@ -227,7 +291,7 @@ function wordleSolver(hardMode) {
       nextNode = solveTree[nextNode][3];
     }
 
-    const list = listFilter(fullWordsList, guessesToFilters(guesses));
+    const list = listFilter(solverWordsList, guessesToFilters(guesses));
 
     if (nextNode === 0) {
       return Promise.resolve({
@@ -240,7 +304,7 @@ function wordleSolver(hardMode) {
       node: nextNode,
       word: solveTree[nextNode][1],
       words: [solveTree[nextNode][1]],
-      result: Array(5).fill('b').join(''),
+      result: Array(WORD_SIZE).fill('b').join(''),
     });
 
     return Promise.resolve({
@@ -258,7 +322,8 @@ function wordleSolver(hardMode) {
   };
 
   solver.solve = solver;
-  solver.isValidWord = (word) => fullWordsList.indexOf(word) > -1;
+  solver.isValidGuessWord = (word) => fullWordsList.indexOf(word) > -1;
+  solver.isValidTargetWord = (word) => solverWordsList.indexOf(word) > -1;
   solver.getGuesses = () => guesses;
   solver.getCurrentSolution = () => {
     const guessIndex = guesses.length - 1;
@@ -272,7 +337,7 @@ function wordleSolver(hardMode) {
 
     return {
       words: guesses[guessIndex].words,
-      list: listFilter(fullWordsList, guessesToFilters(guesses.slice(0, guessIndex))),
+      list: listFilter(solverWordsList, guessesToFilters(guesses.slice(0, guessIndex))),
     };
   };
 
@@ -285,18 +350,18 @@ function wordleChecker(target) {
       return 'ggggg';
     }
 
-    const result = Array(5).fill('b');
-    const used = Array(5).fill(false);
+    const result = Array(WORD_SIZE).fill('b');
+    const used = Array(WORD_SIZE).fill(false);
     const targetLetters = target.split('');
 
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < WORD_SIZE; i += 1) {
       if (target[i] === guess[i]) {
         result[i] = 'g';
         used[i] = true;
       }
     }
 
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < WORD_SIZE; i += 1) {
       if (target[i] !== guess[i]) {
         const pos = targetLetters.findIndex((letter, j) => letter === guess[i] && used[j] !== true);
 
@@ -318,19 +383,23 @@ function getMatchColor(matchType, forceUnmatch) {
   return forceUnmatch === true ? 'w-match-b' : undefined;
 }
 
-function getPlayWord(index) {
-  return fullWordsList[index] || null;
+function getPlayWord(gameId) {
+  return (gameId[1] === 's' ? stdWordsList : fullWordsList)[gameId.slice(2)] || null;
 }
 
-function getPlayWordIndex(word) {
-  const index = fullWordsList.indexOf(word);
-  return index > -1 ? index : null;
+function getPlayWordGameId(word, solverMode) {
+  const index = (solverMode[1] === 's' ? stdWordsList : fullWordsList).indexOf(word);
+  return index > -1 ? `${ solverMode }${ index }` : null;
 }
 
 export {
+  WORD_SIZE,
+
+  wordsInTargets,
+
   getMatchColor,
   getPlayWord,
-  getPlayWordIndex,
+  getPlayWordGameId,
   wordleSolver,
   wordleChecker,
 };

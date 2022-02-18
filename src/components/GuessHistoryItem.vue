@@ -1,7 +1,7 @@
 <template>
   <div class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
     <q-btn
-      v-for="i in 5"
+      v-for="i in WORD_SIZE"
       :key="i"
       unelevated
       size="28px"
@@ -27,7 +27,7 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { getMatchColor } from 'lib/solver/wordle-solver';
+import { WORD_SIZE, getMatchColor } from 'lib/solver/wordle-solver.js';
 
 export default defineComponent({
   name: 'GuessHistoryItemComponent',
@@ -39,6 +39,12 @@ export default defineComponent({
   emits: [
     'undo',
   ],
+
+  data() {
+    return {
+      WORD_SIZE,
+    };
+  },
 
   computed: {
     guessMatchColors() {
