@@ -409,10 +409,27 @@ function getPlayWordGameId(word, solverMode) {
   return index > -1 ? `${ solverMode }${ index }` : null;
 }
 
+function getTargetWords(partialWord, solverMode) {
+  const letters = partialWord.split('').reduce((acc, letter) => {
+    if (acc[letter] === undefined) {
+      acc[letter] = 1;
+    } else {
+      acc[letter] += 1;
+    }
+
+    return acc;
+  }, {});
+  const filters = Object.keys(letters).map((letter) => ([letter, letters[letter]]));
+
+  return (solverMode[1] === 's' ? stdWordsList : fullWordsList)
+    .filter((w) => filters.every(([letter, count]) => w.split('').filter((l) => l === letter).length >= count) === true);
+}
+
 export {
   WORD_SIZE,
 
   wordsInTargets,
+  getTargetWords,
 
   getMatchColor,
   getPlayWord,

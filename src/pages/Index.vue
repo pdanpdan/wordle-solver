@@ -101,88 +101,106 @@
         </q-input>
       </template>
 
-      <q-separator v-show="targetMode !== true" class="full-width"/>
+      <q-separator class="full-width"/>
 
-      <q-scroll-area v-show="targetMode !== true" class="col full-width">
+      <q-scroll-area class="col full-width">
         <div class="column no-wrap items-center">
-          <w-guess-history-item
-            v-for="(guess, j) in guessesVisible"
-            :key="j"
-            :guess="guess"
-            @undo="undoSolver(j)"
-          />
-
-          <div v-if="guessSolved !== true && solutionListLength > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
-            <q-btn
-              v-for="i in WORD_SIZE"
-              :key="i"
-              ref="btnGuessLetter"
-              :class="{ 'w-letter--active': guessLettersLength === i - 1 }"
-              unelevated
-              size="28px"
-              padding="2px"
-              v-bind="guessMatchColors[i - 1]"
-              :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
-              :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
-              @click="onToggleColor(i - 1)"
-            >
-              <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
-
-              <q-badge
-                v-if="guessColorsConflicts[i - 1]"
-                color="negative"
-                rounded
-                floating
-              />
-            </q-btn>
-
-            <q-btn
-              class="q-ml-md"
-              round
-              unelevated
-              size="md"
-              padding="sm"
-              icon="send"
-              color="primary"
-              :disable="guessLettersValid !== true || guessColorsValid !== true"
-              :aria-label="$t('solver.btn_add_guess')"
-              @click="addGuess"
+          <template v-if="targetMode !== true">
+            <w-guess-history-item
+              v-for="(guess, j) in guessesVisible"
+              :key="j"
+              :guess="guess"
+              @undo="undoSolver(j)"
             />
-          </div>
 
-          <q-separator class="full-width" spaced/>
-
-          <div class="row text-subtitle2 text-center">
-            {{ $t('solver.guesses', [guessesLength]) }}
-            <template v-if="playMode !== true && solutionWordsLength > 0">
-              <q-separator vertical spaced/>
-              {{ $t('solver.suggested_words', [solutionWordsLength]) }}
-            </template>
-          </div>
-
-          <div v-if="playMode !== true && solutionWordsLength > 0" class="q-pa-sm">
-            <div class="row items-center justify-center q-gutter-md">
-              <w-solution-word
-                v-for="(props, i) in solutionWordsProps"
+            <div v-if="guessSolved !== true && solutionListLength > 0" class="q-mt-sm row no-wrap items-center q-gutter-x-sm">
+              <q-btn
+                v-for="i in WORD_SIZE"
                 :key="i"
-                v-bind="props"
-                @click="onSelectNextGuess"
+                ref="btnGuessLetter"
+                :class="{ 'w-letter--active': guessLettersLength === i - 1 }"
+                unelevated
+                size="28px"
+                padding="2px"
+                v-bind="guessMatchColors[i - 1]"
+                :disable="guessTargetValid === true || i - 1 >= guessLettersLength"
+                :aria-label="$t('solver.btn_change_color', [guess.letters[i - 1] || '&nbsp;', nextColorMatchType(guess.matchTypes[i - 1])])"
+                @click="onToggleColor(i - 1)"
+              >
+                <div style="min-width: 1.715em">{{ guess.letters[i - 1] || '&nbsp;' }}</div>
+
+                <q-badge
+                  v-if="guessColorsConflicts[i - 1]"
+                  color="negative"
+                  rounded
+                  floating
+                />
+              </q-btn>
+
+              <q-btn
+                class="q-ml-md"
+                round
+                unelevated
+                size="md"
+                padding="sm"
+                icon="send"
+                color="primary"
+                :disable="guessLettersValid !== true || guessColorsValid !== true"
+                :aria-label="$t('solver.btn_add_guess')"
+                @click="addGuess"
               />
             </div>
-          </div>
 
-          <template v-if="playMode !== true">
-            <div class="text-subtitle2 text-center">
-              {{ $t('solver.matching_words', [solutionListLength]) }}
+            <q-separator class="full-width" spaced/>
+
+            <div class="row text-subtitle2 text-center">
+              {{ $t('solver.guesses', [guessesLength]) }}
+              <template v-if="playMode !== true && solutionWordsLength > 0">
+                <q-separator vertical spaced/>
+                {{ $t('solver.suggested_words', [solutionWordsLength]) }}
+              </template>
             </div>
-            <div v-if="solutionListLength > 0" class="q-pa-sm">
+
+            <template v-if="playMode !== true">
+              <div v-if="solutionWordsLength > 0" class="q-pa-sm">
+                <div class="row items-center justify-center q-gutter-md">
+                  <w-solution-word
+                    v-for="(props, i) in solutionWordsProps"
+                    :key="i"
+                    v-bind="props"
+                    @click="onSelectNextGuess"
+                  />
+                </div>
+              </div>
+
+              <div class="text-subtitle2 text-center">
+                {{ $t('solver.matching_words', [solutionListLength]) }}
+              </div>
+              <div v-if="solutionListLength > 0" class="q-pa-sm">
+                <div class="row items-center justify-center q-gutter-sm">
+                  <w-solution-word
+                    v-for="(props, i) in solutionListProps"
+                    :key="i"
+                    v-bind="props"
+                    :disable="guessSolved === true || props.disable === true"
+                    @click="onSelectNextGuess"
+                  />
+                </div>
+              </div>
+            </template>
+          </template>
+
+          <template v-else>
+            <div class="text-subtitle2 text-center">
+              {{ $t('solver.matching_words', [targetListLength]) }}
+            </div>
+            <div v-if="targetListLength > 0" class="q-pa-sm">
               <div class="row items-center justify-center q-gutter-sm">
                 <w-solution-word
-                  v-for="(props, i) in solutionListProps"
+                  v-for="(props, i) in targetListProps"
                   :key="i"
                   v-bind="props"
-                  :disable="guessSolved === true || props.disable === true"
-                  @click="onSelectNextGuess"
+                  @click="onSelectNextTarget"
                 />
               </div>
             </div>
@@ -222,6 +240,7 @@ import {
   WORD_SIZE,
 
   wordsInTargets,
+  getTargetWords,
 
   getMatchColor,
   getPlayWord,
@@ -265,6 +284,8 @@ export default defineComponent({
 
       targetMode,
       target: createTarget(),
+
+      targetList: [],
 
       playMode,
 
@@ -444,6 +465,12 @@ export default defineComponent({
         : this.guessTargetOptions.map((obj) => obj.target).join('');
     },
 
+    guessTargetSearch() {
+      return this.targetMode === true
+        ? this.target.join('')
+        : '';
+    },
+
     guessTargetLength() {
       return this.guessTarget.length;
     },
@@ -595,6 +622,25 @@ export default defineComponent({
       }));
     },
 
+    targetListLength() {
+      return this.targetList.length;
+    },
+
+    targetListProps() {
+      let list;
+
+      if (this.targetListLength <= 30) {
+        list = this.targetList;
+      } else {
+        list = this.targetList.slice(0, 29).concat(`... ${ this.targetListLength - 29 }`);
+      }
+
+      return list.map((word) => ({
+        word,
+        disable: word[0] === '.',
+      }));
+    },
+
     shareUrl() {
       if (this.guessTargetValid === true) {
         const gameId = getPlayWordGameId(this.guessTargetFilled, this.solverMode);
@@ -645,6 +691,10 @@ export default defineComponent({
         ? wordleChecker(this.guessTargetFilled)
         : null;
     },
+
+    guessTargetSearch() {
+      this.targetList = this.guessTargetSearch === '' ? [] : getTargetWords(this.guessTargetSearch, this.solverMode);
+    },
   },
 
   methods: {
@@ -657,14 +707,18 @@ export default defineComponent({
         this.playMode = false;
       }
 
-      this.checker = this.guessTargetValid === true
-        ? wordleChecker(this.guessTargetFilled)
-        : null;
-
       this.solver = wordleSolver(this.solverMode);
 
       this.guessesVisible = guesses.value.slice();
       this.solution = createSolution(this.solver.getCurrentSolution());
+
+      this.targetList = this.guessTargetSearch === '' ? [] : getTargetWords(this.guessTargetSearch, this.solverMode);
+
+      this.$nextTick(() => {
+        this.checker = this.guessTargetValid === true
+          ? wordleChecker(this.guessTargetFilled)
+          : null;
+      });
     },
 
     undoSolver(index) {
@@ -868,6 +922,10 @@ export default defineComponent({
           this.addGuess();
         }
       });
+    },
+
+    onSelectNextTarget(word) {
+      this.target = createTarget(word);
     },
 
     onChangeTarget() {
