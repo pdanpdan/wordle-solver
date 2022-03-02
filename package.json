@@ -1,6 +1,6 @@
 {
   "name": "wordle-solver",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Wordle Solver Helper",
   "productName": "Wordle Solver",
   "author": "Dan Popescu <pdan.popescu@gmail.com>",

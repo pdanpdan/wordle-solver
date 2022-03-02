@@ -163,7 +163,7 @@
 
             <template v-if="playMode !== true">
               <div v-if="solutionWordsLength > 0" class="q-pa-sm">
-                <div class="row items-center justify-center q-gutter-md">
+                <div class="row items-center justify-center q-gutter-sm">
                   <w-solution-word
                     v-for="(props, i) in solutionWordsProps"
                     :key="i"
@@ -191,7 +191,7 @@
           </template>
 
           <template v-else>
-            <div class="text-subtitle2 text-center">
+            <div class="text-subtitle2 text-center q-mt-sm">
               {{ $t('solver.matching_words', [targetListLength]) }}
             </div>
             <div v-if="targetListLength > 0" class="q-pa-sm">
