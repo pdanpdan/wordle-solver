@@ -14,10 +14,11 @@
 
     <q-btn
       class="q-ml-md"
-      flat
+      v-bind="defaultColors"
       round
-      dense
-      size="14px"
+      unelevated
+      size="md"
+      padding="sm"
       icon="undo"
       :aria-label="$t('guess.btn_undo')"
       @click="onUndo"
@@ -28,6 +29,7 @@
 <script>
 import { defineComponent } from 'vue';
 import { WORD_SIZE, getMatchColor } from 'lib/solver/wordle-solver.js';
+import { defaultColors } from 'lib/store';
 
 export default defineComponent({
   name: 'GuessHistoryItemComponent',
@@ -43,6 +45,8 @@ export default defineComponent({
   data() {
     return {
       WORD_SIZE,
+
+      defaultColors,
     };
   },
 

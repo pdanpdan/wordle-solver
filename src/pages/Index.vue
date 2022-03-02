@@ -74,15 +74,11 @@
 
         <q-btn
           class="q-ml-md"
+          v-bind="targetBtnProps"
           round
           unelevated
           size="md"
           padding="sm"
-          :icon="targetMode === true ? 'send' : (playMode === true ? 'visibility' : 'edit')"
-          :color="targetMode === true && canSubmit === true ? 'primary' : defaultColors.color"
-          :text-color="targetMode === true && canSubmit === true ? undefined: defaultColors.textColor"
-          :aria-label="targetMode === true ? $t('solver.btn_save_target') : $t('solver.btn_edit_target')"
-          :disable="targetMode === true && canSubmit !== true"
           @click="onChangeTarget()"
         />
       </div>
@@ -602,6 +598,22 @@ export default defineComponent({
       }
 
       return null;
+    },
+
+    targetBtnProps() {
+      return this.targetMode === true
+        ? {
+          icon: 'send',
+          color: this.canSubmit === true ? 'primary' : this.defaultColors.color,
+          textColor: this.canSubmit === true ? undefined : this.defaultColors.textColor,
+          ariaLabel: this.$t('solver.btn_save_target'),
+          disable: this.canSubmit !== true,
+        }
+        : {
+          icon: this.playMode === true ? 'visibility' : 'edit',
+          ...this.defaultColors,
+          ariaLabel: this.$t('solver.btn_edit_target'),
+        };
     },
   },
 
