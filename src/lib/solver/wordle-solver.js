@@ -37,17 +37,20 @@ function listFilter(list, filters) {
     }
   }
 
+  const filtersBLength = filtersB.length - 1;
+  const filtersRLength = filtersR.length - 1;
+
   return list.filter((word) => {
     let wordB = word.split('');
 
-    for (let i = filtersR.length - 1; i >= 0; i -= 1) {
+    for (let i = filtersRLength; i >= 0; i -= 1) {
       const [letter, position, matchType] = filtersR[i];
 
       if (
         (matchType === 'g' && word[position] !== letter)
         || (matchType === 'y' && (
-          word.indexOf(letter) === -1
-          || word[position] === letter
+          word[position] === letter
+          || word.indexOf(letter) === -1
         ))
       ) {
         return false;
@@ -56,7 +59,7 @@ function listFilter(list, filters) {
       wordB = wordB.map((l) => (l === letter ? '-' : l));
     }
 
-    for (let i = filtersB.length - 1; i >= 0; i -= 1) {
+    for (let i = filtersBLength; i >= 0; i -= 1) {
       const [letter, position] = filtersB[i];
 
       if (word[position] === letter || wordB.indexOf(letter) !== -1) {
@@ -66,6 +69,18 @@ function listFilter(list, filters) {
 
     return true;
   });
+}
+
+function listFilterQuick(list, letter, position, matchType) {
+  if (matchType === 'b') {
+    return list.filter((word) => word[position] !== letter);
+  }
+
+  if (matchType === 'g') {
+    return list.filter((word) => word[position] === letter);
+  }
+
+  return list.filter((word) => word[position] !== letter && word.indexOf(letter) > -1);
 }
 
 function listFilterHard(list, guesses) {
@@ -129,7 +144,7 @@ function wordScoreCalculate(word, list) {
 
     for (let m = 0; m < 3; m += 1) {
       const matchType = matchTypes[m];
-      const matchingWords = listFilter(subList, [`${ letter }${ depth }${ matchType }`]);
+      const matchingWords = listFilterQuick(subList, letter, depth, matchType);
       const matchingWordsLength = matchingWords.length;
 
       if (matchingWordsLength > 0) {
