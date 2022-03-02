@@ -6,6 +6,8 @@
   "author": "Dan Popescu <pdan.popescu@gmail.com>",
   "private": false,
   "scripts": {
+    "dev": "quasar dev",
+    "build:docs": "quasar build -m pwa && rm -rf docs/css/ docs/fonts/ docs/icons/ docs/js/ docs/workbox-*.js && cp -pr dist/pwa/* docs/",
     "lint": "eslint --ext .js,.vue ./",
     "test": "echo \"No test specified\" && exit 0"
   },
