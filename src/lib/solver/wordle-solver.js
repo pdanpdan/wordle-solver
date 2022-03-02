@@ -117,32 +117,34 @@ function listFilterHard(list, guesses) {
 }
 
 function wordScoreCalculate(word, list) {
+  if (list.length === 0) {
+    return Infinity;
+  }
+
   let sum = 0;
 
-  if (list.length > 0) {
-    const calculateSum = (subList, depth = 0, p = 1) => {
-      const letter = word[depth];
-      const pBase = p / subList.length;
+  const calculateSum = (subList, depth = 0, p = 1) => {
+    const letter = word[depth];
+    const pBase = p / subList.length;
 
-      for (let m = 0; m < 3; m += 1) {
-        const matchType = matchTypes[m];
-        const matchingWords = listFilter(subList, [`${ letter }${ depth }${ matchType }`]);
-        const matchingWordsLength = matchingWords.length;
+    for (let m = 0; m < 3; m += 1) {
+      const matchType = matchTypes[m];
+      const matchingWords = listFilter(subList, [`${ letter }${ depth }${ matchType }`]);
+      const matchingWordsLength = matchingWords.length;
 
-        if (matchingWordsLength > 0) {
-          const calcP = pBase * matchingWordsLength;
+      if (matchingWordsLength > 0) {
+        const calcP = pBase * matchingWordsLength;
 
-          if (depth >= WORD_SIZE - 1) {
-            sum += calcP * calcP;
-          } else {
-            calculateSum(matchingWords, depth + 1, calcP);
-          }
+        if (depth >= WORD_SIZE - 1) {
+          sum += calcP * calcP;
+        } else {
+          calculateSum(matchingWords, depth + 1, calcP);
         }
       }
-    };
+    }
+  };
 
-    calculateSum(list);
-  }
+  calculateSum(list);
 
   return sum;
 }
@@ -156,9 +158,8 @@ function decisionTreeGuess(filters, guesses, solverMode) {
     return cache[cacheKey];
   }
 
-  if (filters.findIndex((f) => f[2] !== 'b') === -1) {
-    const usedWords = guesses.map((guess) => guess.word);
-    return fallbackGuessWords.filter((word) => usedWords.indexOf(word) === -1);
+  if (guesses.length === 0) {
+    return fallbackGuessWords;
   }
 
   const filteredWordsList = listFilter(solverMode[1] === 's' ? stdWordsList : fullWordsList, filters);
@@ -181,11 +182,12 @@ function decisionTreeGuess(filters, guesses, solverMode) {
           ? fullWordsList
           : listFilterHard(fullWordsList, guesses)
       );
+    const guessWordsListLength = guessWordsList.length;
     let minScore = Infinity;
 
-    for (let i = filteredWordsListLength - 1; i >= 0; i -= 1) {
-      const word = filteredWordsList[i];
-      const score = wordScoreCalculate(word, guessWordsList);
+    for (let i = guessWordsListLength - 1; i >= 0; i -= 1) {
+      const word = guessWordsList[i];
+      const score = wordScoreCalculate(word, filteredWordsList);
       if (score < minScore) {
         minScore = score;
         words = [word];

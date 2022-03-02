@@ -363,13 +363,25 @@ export default defineComponent({
             if (
               charMatchType === 'b'
               || guesses.value.findIndex((guess) => (
-                guess.letters[i] === letter && guess.matchTypes[i] !== 'y'
+                guess.letters[i] === letter && (
+                  guess.matchTypes[i] === 'g'
+                  || (
+                    guess.matchTypes[i] !== 'y'
+                    && guess.letters.findIndex((l, j) => l === letter && (matchTypes[j] === 'g' || matchTypes[j] === 'y')) > -1
+                  )
+                )
               )) > -1
             ) {
               conflicts[i] = true;
             }
           } else if (guesses.value.findIndex((guess) => (
-            guess.letters[i] === letter && (guess.matchTypes[i] === 'g' || guess.matchTypes[i] === 'y')
+            guess.letters[i] === letter && (
+              guess.matchTypes[i] === 'g'
+              || (
+                guess.matchTypes[i] === 'y'
+                && letters.findIndex((l, j) => j < i && l === letter && (matchTypes[j] === 'g' || matchTypes[j] === 'y')) === -1
+              )
+            )
           )) > -1) {
             conflicts[i] = true;
           }
@@ -624,54 +636,8 @@ export default defineComponent({
       });
     },
 
-    guessLetters(val) {
-      if (this.checker !== null && val.length === WORD_SIZE) {
-        const result = this.checker(val);
-
-        for (let i = 0; i < WORD_SIZE; i += 1) {
-          this.guess.matchTypes[i] = result[i];
-        }
-
-        return;
-      }
-
-      if (this.solutionListLength === 1 && this.solution.list[0][0] === val) {
-        for (let i = 0; i < WORD_SIZE; i += 1) {
-          this.guess.matchTypes[i] = 'g';
-        }
-
-        return;
-      }
-
-      const usedLetters = JSON.parse(JSON.stringify(charsMatchType.value));
-      const iMax = this.guessLettersLength;
-
-      for (let i = 0; i < iMax; i += 1) {
-        const letter = this.guess.letters[i];
-        this.guess.matchTypes[i] = 'x';
-
-        if (usedLetters[letter].match !== 'x') {
-          if (usedLetters[letter].count <= 0) {
-            this.guess.matchTypes[i] = 'b';
-          } else if (guesses.value.findIndex(({ letters, matchTypes }) => letters[i] === letter && matchTypes[i] === 'g') > -1) {
-            this.guess.matchTypes[i] = 'g';
-            usedLetters[letter].count -= 1;
-          }
-        }
-      }
-
-      for (let i = 0; i < iMax; i += 1) {
-        const letter = this.guess.letters[i];
-
-        if (usedLetters[letter].match !== 'x' && this.guess.matchTypes[i] === 'x') {
-          if (usedLetters[letter].count <= 0) {
-            this.guess.matchTypes[i] = 'b';
-          } else {
-            this.guess.matchTypes[i] = 'y';
-            usedLetters[letter].count -= 1;
-          }
-        }
-      }
+    guessLetters() {
+      this.fillGuessMatches();
     },
 
     guessTargetFilled() {
@@ -690,6 +656,10 @@ export default defineComponent({
         this.target = createTarget();
         this.playMode = false;
       }
+
+      this.checker = this.guessTargetValid === true
+        ? wordleChecker(this.guessTargetFilled)
+        : null;
 
       this.solver = wordleSolver(this.solverMode);
 
@@ -752,6 +722,58 @@ export default defineComponent({
           this.guessesVisible = guesses.value.slice();
           this.guess = createGuess();
         });
+    },
+
+    fillGuessMatches() {
+      const { guessLetters } = this;
+
+      if (this.checker !== null && guessLetters.length === WORD_SIZE) {
+        const result = this.checker(guessLetters);
+
+        for (let i = 0; i < WORD_SIZE; i += 1) {
+          this.guess.matchTypes[i] = result[i];
+        }
+
+        return;
+      }
+
+      if (this.solutionListLength === 1 && this.solution.list[0][0] === guessLetters) {
+        for (let i = 0; i < WORD_SIZE; i += 1) {
+          this.guess.matchTypes[i] = 'g';
+        }
+
+        return;
+      }
+
+      const usedLetters = JSON.parse(JSON.stringify(charsMatchType.value));
+      const iMax = this.guessLettersLength;
+
+      for (let i = 0; i < iMax; i += 1) {
+        const letter = this.guess.letters[i];
+        this.guess.matchTypes[i] = 'x';
+
+        if (usedLetters[letter].match !== 'x') {
+          if (usedLetters[letter].count <= 0) {
+            this.guess.matchTypes[i] = 'b';
+          } else if (guesses.value.findIndex(({ letters, matchTypes }) => letters[i] === letter && matchTypes[i] === 'g') > -1) {
+            this.guess.matchTypes[i] = 'g';
+            usedLetters[letter].count -= 1;
+          }
+        }
+      }
+
+      for (let i = 0; i < iMax; i += 1) {
+        const letter = this.guess.letters[i];
+
+        if (usedLetters[letter].match !== 'x' && this.guess.matchTypes[i] === 'x') {
+          if (usedLetters[letter].count <= 0) {
+            this.guess.matchTypes[i] = 'b';
+          } else {
+            this.guess.matchTypes[i] = 'y';
+            usedLetters[letter].count -= 1;
+          }
+        }
+      }
     },
 
     onKeyUp(evt) {
