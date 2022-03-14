@@ -6,12 +6,10 @@ import treeEasyStd from './tree-easy-std.js';
 import treeEasyFull from './tree-easy-full.js';
 import treeHardStd from './tree-hard-std.js';
 import treeHardFull from './tree-hard-full.js';
+import stdWordsList from './std-words-list.json';
+import fullWordsList from './full-words-list.json';
 
 const WORD_SIZE = 5;
-
-const stdWordsList = [...new Set(treeEasyStd.map((o) => o[1]))].sort();
-const fullWordsList = [...new Set(treeEasyFull.map((o) => o[1]))].sort()
-  .sort((a, b) => (stdWordsList.indexOf(a) === -1 ? 1 : 0) - (stdWordsList.indexOf(b) === -1 ? 1 : 0));
 
 const guessWordRe = new RegExp(`^[a-z]{${ WORD_SIZE }}$`, 'i');
 const guessResultRe = /^[gyb]$/i;
