@@ -10,11 +10,12 @@ import stdWordsList from './std-words-list.json';
 import fullWordsList from './full-words-list.json';
 
 const WORD_SIZE = 5;
+const MAX_GUESSES = 6;
 
 const guessWordRe = new RegExp(`^[a-z]{${ WORD_SIZE }}$`, 'i');
 const guessResultRe = /^[gyb]$/i;
 const matchTypes = ['g', 'y', 'b'];
-const fallbackGuessWords = ['crane', 'tares', 'saber', 'roate', 'raile', 'lares'];
+const fallbackGuessWords = ['crane', 'crate', 'tares', 'leant', 'tromp', 'saber', 'roate', 'raile', 'lares'];
 
 const cache = {};
 
@@ -171,7 +172,9 @@ function decisionTreeGuess(filters, guesses, solverMode) {
     return cache[cacheKey];
   }
 
-  if (guesses.length === 0) {
+  const guessesLength = guesses.length;
+
+  if (guessesLength === 0) {
     return fallbackGuessWords;
   }
 
@@ -188,7 +191,7 @@ function decisionTreeGuess(filters, guesses, solverMode) {
 
   if (filteredWordsListLength > 1) {
     // eslint-disable-next-line no-nested-ternary
-    const guessWordsList = filteredWordsListLength < 4
+    const guessWordsList = filteredWordsListLength < MAX_GUESSES - guessesLength
       ? filteredWordsList
       : (
         solverMode[0] === 'e'
