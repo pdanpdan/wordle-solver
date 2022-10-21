@@ -15,7 +15,7 @@ const MAX_GUESSES = 6;
 const guessWordRe = new RegExp(`^[a-z]{${ WORD_SIZE }}$`, 'i');
 const guessResultRe = /^[gyb]$/i;
 const matchTypes = ['g', 'y', 'b'];
-const fallbackGuessWords = ['crane', 'crate', 'tares', 'leant', 'tromp', 'saber', 'roate', 'raile', 'lares'];
+const fallbackGuessWords = ['slate', 'crane', 'raise', 'crate', 'tares', 'leant', 'tromp', 'saber', 'roate', 'raile', 'lares'];
 
 const cache = {};
 
