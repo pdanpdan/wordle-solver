@@ -389,6 +389,7 @@ export default defineComponent({
                   || (
                     guess.matchTypes[i] !== 'y'
                     && guess.letters.findIndex((l, j) => l === letter && (matchTypes[j] === 'g' || matchTypes[j] === 'y')) > -1
+                    && guess.letters.findIndex((l, j) => l === letter && (guess.matchTypes[j] === 'g' || (j < i && guess.matchTypes[j] === 'y'))) === -1
                   )
                 )
               )) > -1
@@ -400,7 +401,7 @@ export default defineComponent({
               guess.matchTypes[i] === 'g'
               || (
                 guess.matchTypes[i] === 'y'
-                && letters.findIndex((l, j) => j < i && l === letter && (matchTypes[j] === 'g' || matchTypes[j] === 'y')) === -1
+                && letters.findIndex((l, j) => j > i && l === letter && (matchTypes[j] === 'g' || matchTypes[j] === 'y')) === -1
               )
             )
           )) > -1) {
