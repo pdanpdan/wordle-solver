@@ -141,6 +141,15 @@ const charsMatchType = computed(() => {
           }
         }
       }
+
+      for (let i = 0; i < WORD_SIZE; i += 1) {
+        const letter = letters[i];
+        const matchType = matchTypes[i];
+
+        if (matchType === 'x' && localChars[letter].match === 'x' && chars[letter].match === 'x') {
+          chars[letter].match = 'b';
+        }
+      }
     });
   }
 
