@@ -1,34 +1,47 @@
 {
   "name": "wordle-solver",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Wordle Solver Helper",
   "productName": "Wordle Solver",
-  "author": "Dan Popescu <pdan.popescu@gmail.com>",
+  "author": {
+    "name": "Dan Popescu",
+    "email": "pdan.popescu@gmail.com",
+    "url": "https://github.com/pdanpdan"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/pdanpdan"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pdanpdan/wordle-solver.git"
+  },
   "private": false,
+  "license": "MIT",
   "scripts": {
     "dev": "quasar dev",
-    "build:docs": "quasar build -m pwa && rm -rf docs/css/ docs/fonts/ docs/icons/ docs/js/ docs/workbox-*.js && cp -pr dist/pwa/* docs/",
+    "build": "quasar build -m pwa && rm -rf docs/css/ docs/fonts/ docs/icons/ docs/js/ docs/workbox-*.js && cp -pr dist/pwa/* docs/",
     "lint": "eslint --ext .js,.vue ./",
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/extras": "^1.15.5",
-    "core-js": "^3.25.5",
-    "quasar": "^2.10.0",
-    "vue": "^3.2.41",
-    "vue-i18n": "9.3.0-beta.6",
-    "vue-router": "^4.1.5",
+    "@quasar/extras": "^1.16.5",
+    "core-js": "^3.32.1",
+    "quasar": "^2.12.5",
+    "vue": "^3.3.4",
+    "vue-i18n": "^9.3.0-beta.14-77e850b",
+    "vue-router": "^4.2.4",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.19.1",
+    "@babel/eslint-parser": "^7.22.10",
     "@quasar/app": "^3.3.3",
-    "eslint": "^8.25.0",
+    "eslint": "^8.47.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-vue": "^9.6.0",
+    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-vue": "^9.17.0",
     "eslint-webpack-plugin": "^3.2.0",
-    "workbox-webpack-plugin": "^6.5.4"
+    "workbox-webpack-plugin": "^7.0.0"
   },
   "browserslist": [
     "last 4 Chrome versions",
